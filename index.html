@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DETEX Pricing Tool</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="wrap">
+
+  <header class="top">
+    <h1>DETEX Pricing Tool</h1>
+    <div class="sub" id="sourceLine">Loading price data…</div>
+  </header>
+
+  <div class="tabs">
+    <button class="tab-btn active" data-panel="panel-lookup">Lookup</button>
+    <button class="tab-btn" data-panel="panel-sku">SKU Builder</button>
+    <button class="tab-btn" data-panel="panel-quote">Quote Builder</button>
+  </div>
+
+  <div class="discount-bar">
+    <div class="discount-field">
+      <label for="discountPctInput">Discount % off list</label>
+      <input type="number" id="discountPctInput" min="0" max="100" step="0.1">
+    </div>
+    <div class="discount-field">
+      <label for="discountMultInput">Net multiplier</label>
+      <input type="number" id="discountMultInput" min="0" max="1" step="0.0001">
+    </div>
+    <div class="discount-hint">This sets the default net price shown in Lookup and applied to newly added quote lines. Each quote line's discount can still be edited individually.</div>
+    <button class="btn ghost" id="applyDiscountAll">Apply to all quote lines</button>
+  </div>
+
+  <div class="panel active" id="panel-lookup">
+    <div class="toolbar">
+      <input type="text" id="searchInput" class="search-input" placeholder="Search part number, description, or keyword…">
+      <select id="catFilter" class="cat-select">
+        <option value="">All categories</option>
+      </select>
+    </div>
+    <div class="results-meta" id="resultsMeta"></div>
+    <div id="results"></div>
+  </div>
+
+  <div class="panel" id="panel-sku">
+    <div class="toolbar">
+      <input type="text" id="skuInput" class="search-input" placeholder="e.g. V40x08BNx36xLDxWxIC7 or 60-03R-628-RHR-628-LD-95T-MC65-36">
+      <button class="btn" id="skuPriceBtn">Price It</button>
+    </div>
+    <div class="results-meta">
+      Phase 1 coverage: Advantex 10, 20, 40, 60 Series and Value Series V40, V50, V51. Delimit every component with <code>x</code> or <code>-</code> (series, trim, finish, options all separated). Other series aren't decoded yet — use Lookup for flat part numbers, or ask in chat.
+    </div>
+    <div id="skuResult"></div>
+  </div>
+
+  <div class="panel" id="panel-quote">
+    <div id="quoteEmpty" class="empty-state">No lines yet — search in the Lookup tab and click "Add to Quote".</div>
+    <div id="quoteTableWrap" style="overflow-x:auto;">
+      <table class="quote-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Qty</th>
+            <th>Part</th>
+            <th>Description</th>
+            <th>List</th>
+            <th>Disc.</th>
+            <th>Net Unit</th>
+            <th>Ext. Net</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="quoteBody"></tbody>
+      </table>
+    </div>
+
+    <div class="quote-actions no-print">
+      <button class="btn ghost" id="clearQuoteBtn">Clear Quote</button>
+      <button class="btn ghost" id="csvQuoteBtn">Copy as CSV</button>
+      <button class="btn" id="printQuoteBtn">Print / Save as PDF</button>
+    </div>
+
+    <div class="totals-card" id="quoteTotals">
+      <div class="tot list"><div class="label">List Total</div><div class="val" id="totListVal">$0.00</div></div>
+      <div class="tot savings"><div class="label">Total Savings</div><div class="val" id="totSavingsVal">$0.00</div></div>
+      <div class="tot net"><div class="label">Net Total</div><div class="val" id="totNetVal">$0.00</div></div>
+    </div>
+  </div>
+
+  <footer class="foot">
+    <b>Ground rules:</b> Prices are list prices from the source file below; net prices are calculated, not published by DETEX. Always verify a SKU actually exists in the current price book before quoting it — this tool will not guess at combinations it can't find. Flagged items below had conflicting data in the source spreadsheet and were resolved against the official DETEX PDF price list.
+    <ul id="correctionsList" style="margin:8px 0 0; padding-left:18px;"></ul>
+  </footer>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="data.js"></script>
+<script src="rules.js"></script>
+<script src="builder.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
