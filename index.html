@@ -15,8 +15,8 @@
   </header>
 
   <div class="tabs">
-    <button class="tab-btn active" data-panel="panel-lookup">Lookup</button>
-    <button class="tab-btn" data-panel="panel-sku">SKU Builder</button>
+    <button class="tab-btn active" data-panel="panel-sku">Device Builder</button>
+    <button class="tab-btn" data-panel="panel-lookup">Lookup</button>
     <button class="tab-btn" data-panel="panel-quote">Quote Builder</button>
   </div>
 
@@ -33,18 +33,7 @@
     <button class="btn ghost" id="applyDiscountAll">Apply to all quote lines</button>
   </div>
 
-  <div class="panel active" id="panel-lookup">
-    <div class="toolbar">
-      <input type="text" id="searchInput" class="search-input" placeholder="Search part number, description, or keyword…">
-      <select id="catFilter" class="cat-select">
-        <option value="">All categories</option>
-      </select>
-    </div>
-    <div class="results-meta" id="resultsMeta"></div>
-    <div id="results"></div>
-  </div>
-
-  <div class="panel" id="panel-sku">
+  <div class="panel active" id="panel-sku">
     <div class="toolbar">
       <input type="text" id="skuInput" class="search-input" placeholder="e.g. V40x08BNx36xLDxWxIC7 or 60-03R-628-RHR-628-LD-95T-MC65-36">
       <button class="btn" id="skuPriceBtn">Price It</button>
@@ -53,6 +42,17 @@
       Phase 1 coverage: Advantex 10, 20, 40, 60 Series and Value Series V40, V50, V51. Delimit every component with <code>x</code> or <code>-</code> (series, trim, finish, options all separated). Other series aren't decoded yet — use Lookup for flat part numbers, or ask in chat.
     </div>
     <div id="skuResult"></div>
+  </div>
+
+  <div class="panel" id="panel-lookup">
+    <div class="toolbar">
+      <input type="text" id="searchInput" class="search-input" placeholder="Search part number, description, or keyword…">
+      <select id="catFilter" class="cat-select">
+        <option value="">All categories</option>
+      </select>
+    </div>
+    <div class="results-meta" id="resultsMeta"></div>
+    <div id="results"></div>
   </div>
 
   <div class="panel" id="panel-quote">

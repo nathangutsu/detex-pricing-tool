@@ -216,7 +216,7 @@ function renderSkuResult() {
     state.quote.push({
       part: raw.trim(),
       desc: result.lines.map(l => l.label).join('; '),
-      cat: `SKU BUILDER — ${result.seriesLabel}`,
+      cat: `DEVICE BUILDER — ${result.seriesLabel}`,
       uoi: 'EA.',
       listPrice: result.total,
       qty: 1,

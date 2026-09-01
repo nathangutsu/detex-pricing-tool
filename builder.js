@@ -47,7 +47,7 @@ function buildAssembledSku(raw) {
   const seriesKey = Object.keys(SERIES_RULES).find(k => k.toUpperCase() === seriesToken.toUpperCase());
   if (!seriesKey) {
     return {
-      error: `Series "${seriesToken}" isn't recognized, or isn't supported yet by the SKU Builder. Phase 1 covers 10, 20, 40, 60 (Advantex) and V40, V50, V51 (Value Series). Try the Lookup tab if this is meant to be a single flat part number instead.`
+      error: `Series "${seriesToken}" isn't recognized, or isn't supported yet by the Device Builder. Phase 1 covers 10, 20, 40, 60 (Advantex) and V40, V50, V51 (Value Series). Try the Lookup tab if this is meant to be a single flat part number instead.`
     };
   }
   const rules = SERIES_RULES[seriesKey];
