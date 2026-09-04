@@ -15,6 +15,69 @@ Object.keys(SERIES_RULES).forEach(sk => {
   if (!GLOBAL_OPTION_INFO[c]) GLOBAL_OPTION_INFO[c] = { label: c, page: null };
 });
 
+// Electrified options exist as flat rows in DETEX_DATA (cat 'ADVANTEX' or 'VALUE SERIES')
+// with per-code eligibility spelled out in their own descriptions. Prices are looked up live
+// from DETEX_DATA (not hardcoded) so a data.js regeneration stays authoritative automatically;
+// only the eligibility subsets and cross-requirement notes below were read off those descriptions.
+const ELECTRIFIED_COMPOUND_CODES = ['ER EX W', 'EB W', 'EEX W', 'EX W', 'EXV W', 'ER EX'];
+
+const ELECTRIFIED_ELIGIBILITY = {
+  ADVANTEX: {
+    'EA':      { series: ['10','20','40','60'] },
+    'EB W':    { series: ['10','20','40'], note: 'Not available on 60 Series.' },
+    'ER EX':   { series: ['10','20','40','60'], note: 'Requires a logic controller & power supply, not included.' },
+    'ER EX W': { series: ['10','20','40'], note: 'Not available on 60 Series. Requires the mechanical W option on the device as well, plus a logic controller/power supply (not included).' },
+    'EI':      { series: ['10','40'], note: 'Requires a logic controller, not included.' },
+    'ED':      { series: ['10','20','40','60'] },
+    'EE':      { series: ['10','20','40','60'], note: 'Includes its own power supply.' },
+    'EEX':     { series: ['10','20','40'], note: 'Not available on 60 Series. Non-weatherized devices only.' },
+    'EEX W':   { series: ['10','20','40'], note: 'Not available on 60 Series. Requires the mechanical W option on the device as well.' },
+    'ES':      { series: ['10','40'] },
+    'EX':      { series: ['10','20','40','60'] },
+    'EX W':    { series: ['10','20','40'], note: 'Not available on 60 Series.' },
+    'EXV':     { series: ['10','20','40','60'] },
+    'EXV W':   { series: ['10','20','40'], note: 'Not available on 60 Series.' },
+  },
+  'VALUE SERIES': {
+    'EA':      { series: ['V40','V50','V51'] },
+    'EB':      { series: ['V40','V50','V51'] },
+    'EB W':    { series: ['V40','V50','V51'], note: 'Requires the mechanical W option on the device as well.' },
+    'ED':      { series: ['V40','V50','V51'] },
+    'ER EX':   { series: ['V40','V50','V51'], note: 'Requires a logic controller & power supply, not included.' },
+    'ER EX W': { series: ['V40','V50','V51'], note: 'Requires the mechanical W option on the device as well, plus a logic controller/power supply (not included).' },
+    'ES':      { series: ['V40'] },
+    'EE':      { series: ['V40','V50','V51'], note: 'Includes its own power supply.' },
+    'EEX':     { series: ['V40','V50','V51'], note: 'Non-weatherized devices, 36" and longer, only.' },
+    'EEX W':   { series: ['V40','V50','V51'], note: 'Requires the mechanical W option on the device as well.' },
+    'EI':      { series: ['V40','V50','V51'], note: 'Requires a logic controller, not included.' },
+    'EX':      { series: ['V40','V50','V51'] },
+    'EX W':    { series: ['V40','V50','V51'], note: 'Requires the mechanical W option on the device as well.' },
+    'EXV':     { series: ['V40','V50','V51'] },
+    'EXV W':   { series: ['V40','V50','V51'], note: 'Requires the mechanical W option on the device as well.' },
+  },
+};
+
+function mergeCompoundTokens(tokens) {
+  const out = [];
+  let i = 0;
+  while (i < tokens.length) {
+    let matched = null;
+    for (let span = 3; span >= 2; span--) {
+      if (i + span > tokens.length) continue;
+      const joined = tokens.slice(i, i + span).join(' ').toUpperCase();
+      if (ELECTRIFIED_COMPOUND_CODES.includes(joined)) { matched = { span, joined }; break; }
+    }
+    if (matched) { out.push(matched.joined); i += matched.span; }
+    else { out.push(tokens[i]); i += 1; }
+  }
+  return out;
+}
+
+function findElectrifiedOption(catGroup, code) {
+  const upper = code.toUpperCase();
+  return DETEX_DATA.find(r => r.cat === catGroup && r.part.toUpperCase() === upper) || null;
+}
+
 function findDevicePrice(seriesKey, finish, width) {
   let pattern = `${seriesKey}x${finish}`;
   if (width && width !== '36') pattern += `x${width}`;
@@ -51,7 +114,8 @@ function buildAssembledSku(raw) {
     };
   }
   const rules = SERIES_RULES[seriesKey];
-  const rest = tokens.slice(1);
+  const catGroup = (seriesKey === 'V40' || seriesKey === 'V50' || seriesKey === 'V51') ? 'VALUE SERIES' : 'ADVANTEX';
+  const rest = mergeCompoundTokens(tokens.slice(1));
 
   const trimTable = Object.assign({}, rules.pulls, rules.levers);
   const trimKeysUpper = {};
@@ -103,6 +167,20 @@ function buildAssembledSku(raw) {
     if (rules.options[upper] !== undefined) {
       const o = rules.options[upper];
       lines.push({ label: `${upper} — ${o.label}`, price: o.price, page: o.page });
+      return;
+    }
+    const elig = ELECTRIFIED_ELIGIBILITY[catGroup] && ELECTRIFIED_ELIGIBILITY[catGroup][upper];
+    if (elig) {
+      if (!elig.series.includes(seriesKey)) {
+        unresolved.push(`"${tok}" (electrified option) isn't available on ${rules.label} — eligible series: ${elig.series.join(', ')}. Not priced.`);
+        return;
+      }
+      const rec = findElectrifiedOption(catGroup, upper);
+      if (!rec) {
+        unresolved.push(`"${tok}" should be available on ${rules.label} per catalog notes, but no priced row was found in the current data — possible data gap. Not priced.`);
+        return;
+      }
+      lines.push({ label: `${upper} — ${rec.desc}`, price: rec.price, page: null, note: elig.note });
       return;
     }
     if (GLOBAL_OPTION_INFO[upper]) {

@@ -181,7 +181,7 @@ function renderSkuResult() {
     <tr>
       <td>${escapeHtml(l.label)}${l.note ? `<div class="note-flag">⚠ ${escapeHtml(l.note)}</div>` : ''}</td>
       <td class="num">${money(l.price)}</td>
-      <td class="fam-line">p.${l.page}</td>
+      <td class="fam-line">${l.page ? 'p.' + l.page : 'flat catalog'}</td>
     </tr>
   `).join('');
 
