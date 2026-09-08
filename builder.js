@@ -19,7 +19,7 @@ Object.keys(SERIES_RULES).forEach(sk => {
 // with per-code eligibility spelled out in their own descriptions. Prices are looked up live
 // from DETEX_DATA (not hardcoded) so a data.js regeneration stays authoritative automatically;
 // only the eligibility subsets and cross-requirement notes below were read off those descriptions.
-const ELECTRIFIED_COMPOUND_CODES = ['ER EX W', 'EB W', 'EEX W', 'EX W', 'EXV W', 'ER EX'];
+const ELECTRIFIED_COMPOUND_CODES = ['EE ER EX', 'ER EX W', 'EB W', 'EEX W', 'EX W', 'EXV W', 'ER EX'];
 
 const ELECTRIFIED_ELIGIBILITY = {
   ADVANTEX: {
@@ -32,11 +32,14 @@ const ELECTRIFIED_ELIGIBILITY = {
     'EE':      { series: ['10','20','40','60'], note: 'Includes its own power supply.' },
     'EEX':     { series: ['10','20','40'], note: 'Not available on 60 Series. Non-weatherized devices only.' },
     'EEX W':   { series: ['10','20','40'], note: 'Not available on 60 Series. Requires the mechanical W option on the device as well.' },
+    'EE ER EX': { series: ['10','20','40','60'], note: 'Delayed Egress with Latch Retraction. Requires an 84-800/85-800 series power supply controller (sold separately, but required — includes remote wall-mount keyswitch & horn).' },
     'ES':      { series: ['10','40'] },
     'EX':      { series: ['10','20','40','60'] },
     'EX W':    { series: ['10','20','40'], note: 'Not available on 60 Series.' },
     'EXV':     { series: ['10','20','40','60'] },
     'EXV W':   { series: ['10','20','40'], note: 'Not available on 60 Series.' },
+    'LX':      { series: ['10','40','60'], note: 'Latch Bolt Signaling. Also available on 70/80 Series (not yet supported by this builder).' },
+    'LXV':     { series: ['10','40'], note: 'Latch Bolt Signaling for High Current.' },
   },
   'VALUE SERIES': {
     'EA':      { series: ['V40','V50','V51'] },
@@ -73,6 +76,42 @@ function mergeCompoundTokens(tokens) {
   return out;
 }
 
+// Several real codes contain a literal "X" (EX, EXV, LX, LXV) that collides with "x" used as a
+// delimiter elsewhere (V40x08BN). "-" is unambiguous (no code contains a dash), so split on "-"
+// first; only split a piece further on "x" if the whole piece doesn't already match something
+// known for this series — that keeps EX/EXV/LX/LXV intact while still supporting pure-x input.
+function isKnownWholeToken(piece, seriesKey, rules, trimKeysUpper, catGroup) {
+  const upper = piece.toUpperCase();
+  if (ALL_FINISHES.has(piece)) return true;
+  if (piece === '36' || piece === '48' || piece === '60') return true;
+  if (piece === '96' || piece === '120') return true;
+  if (HANDING_CODES.has(upper)) return true;
+  if (DOGGING_CODES.has(upper)) return true;
+  if (CYLINDER_CODES[upper]) return true;
+  if (rules.options[upper] !== undefined) return true;
+  if (trimKeysUpper[upper]) return true;
+  if (ELECTRIFIED_ELIGIBILITY[catGroup] && ELECTRIFIED_ELIGIBILITY[catGroup][upper]) return true;
+  return false;
+}
+
+function smartSplitRest(afterSeriesStr, seriesKey, rules, trimKeysUpper, catGroup) {
+  const dashPieces = afterSeriesStr.split(/-+/).map(s => s.trim()).filter(Boolean);
+  const out = [];
+  dashPieces.forEach(piece => {
+    if (isKnownWholeToken(piece, seriesKey, rules, trimKeysUpper, catGroup) || !/x/i.test(piece)) {
+      out.push(piece);
+      return;
+    }
+    const subParts = piece.split(/x+/i).map(s => s.trim()).filter(Boolean);
+    if (subParts.length > 1 && subParts.every(sp => isKnownWholeToken(sp, seriesKey, rules, trimKeysUpper, catGroup))) {
+      out.push(...subParts);
+    } else {
+      out.push(piece);
+    }
+  });
+  return out;
+}
+
 function findElectrifiedOption(catGroup, code) {
   const upper = code.toUpperCase();
   return DETEX_DATA.find(r => r.cat === catGroup && r.part.toUpperCase() === upper) || null;
@@ -105,8 +144,9 @@ function buildAssembledSku(raw) {
   const input = (raw || '').trim();
   if (!input) return { error: 'Enter a SKU string, e.g. V40x08BNx36xLDxWxIC7' };
 
-  const tokens = input.split(/[-x]+/i).map(t => t.trim()).filter(Boolean);
-  const seriesToken = tokens[0];
+  // Series prefix never contains "x" (10/20/40/60/V40/V50/V51), so the blanket split is safe
+  // for extracting just the first token.
+  const seriesToken = input.split(/[-x]+/i)[0];
   const seriesKey = Object.keys(SERIES_RULES).find(k => k.toUpperCase() === seriesToken.toUpperCase());
   if (!seriesKey) {
     return {
@@ -115,11 +155,13 @@ function buildAssembledSku(raw) {
   }
   const rules = SERIES_RULES[seriesKey];
   const catGroup = (seriesKey === 'V40' || seriesKey === 'V50' || seriesKey === 'V51') ? 'VALUE SERIES' : 'ADVANTEX';
-  const rest = mergeCompoundTokens(tokens.slice(1));
 
   const trimTable = Object.assign({}, rules.pulls, rules.levers);
   const trimKeysUpper = {};
   Object.keys(trimTable).forEach(k => { trimKeysUpper[k.toUpperCase()] = k; });
+
+  const afterSeries = input.slice(seriesToken.length).replace(/^[-x]+/i, '');
+  const rest = mergeCompoundTokens(smartSplitRest(afterSeries, seriesKey, rules, trimKeysUpper, catGroup));
 
   let trimCode = null;
   rest.forEach(tok => {
