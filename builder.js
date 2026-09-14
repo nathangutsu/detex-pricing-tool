@@ -24,39 +24,39 @@ const ELECTRIFIED_COMPOUND_CODES = ['EE ER EX', 'ER EX W', 'EB W', 'EEX W', 'EX 
 const ELECTRIFIED_ELIGIBILITY = {
   ADVANTEX: {
     'EA':      { series: ['10','20','40','60'] },
-    'EB W':    { series: ['10','20','40'], note: 'Not available on 60 Series.' },
+    'EB W':    { series: ['10','20','40'], note: 'Not available on 60 Series.', requiresDeviceW: true },
     'ER EX':   { series: ['10','20','40','60'], note: 'Requires a power supply controller, not included — order separately.', controllerCodes: ['81-800*', '82-800*', '83-800*'] },
-    'ER EX W': { series: ['10','20','40'], note: 'Not available on 60 Series. Requires the mechanical W option on the device as well, plus a power supply controller (not included).', controllerCodes: ['81-800*', '82-800*', '83-800*'] },
+    'ER EX W': { series: ['10','20','40'], note: 'Not available on 60 Series. Also requires a power supply controller (not included).', controllerCodes: ['81-800*', '82-800*', '83-800*'], requiresDeviceW: true },
     'EI':      { series: ['10','40'], note: 'Requires a logic controller, not included — see Lookup, POWER SUPPLIES & LOGIC CONTROLLERS category.' },
     'ED':      { series: ['10','20','40','60'] },
     'EE':      { series: ['10','20','40','60'], note: 'Includes its own power supply.' },
     'EEX':     { series: ['10','20','40'], note: 'Not available on 60 Series. Non-weatherized devices only. Requires a logic controller, not included — see Lookup, POWER SUPPLIES & LOGIC CONTROLLERS category.' },
-    'EEX W':   { series: ['10','20','40'], note: 'Not available on 60 Series. Requires the mechanical W option on the device as well, plus a logic controller (not included) — see Lookup, POWER SUPPLIES & LOGIC CONTROLLERS category.' },
+    'EEX W':   { series: ['10','20','40'], note: 'Not available on 60 Series. Also requires a logic controller (not included) — see Lookup, POWER SUPPLIES & LOGIC CONTROLLERS category.', requiresDeviceW: true },
     'EE ER EX': { series: ['10','20','40','60'], note: 'Delayed Egress with Latch Retraction. Requires a power supply controller, not included — order separately.', controllerCodes: ['84-800**', '85-800**'] },
     'ES':      { series: ['10','40'] },
     'EX':      { series: ['10','20','40','60'] },
-    'EX W':    { series: ['10','20','40'], note: 'Not available on 60 Series.' },
+    'EX W':    { series: ['10','20','40'], note: 'Not available on 60 Series.', requiresDeviceW: true },
     'EXV':     { series: ['10','20','40','60'] },
-    'EXV W':   { series: ['10','20','40'], note: 'Not available on 60 Series.' },
+    'EXV W':   { series: ['10','20','40'], note: 'Not available on 60 Series.', requiresDeviceW: true },
     'LX':      { series: ['10','40','60'], note: 'Latch Bolt Signaling. Also available on 70/80 Series (not yet supported by this builder).' },
     'LXV':     { series: ['10','40'], note: 'Latch Bolt Signaling for High Current.' },
   },
   'VALUE SERIES': {
     'EA':      { series: ['V40','V50','V51'] },
     'EB':      { series: ['V40','V50','V51'] },
-    'EB W':    { series: ['V40','V50','V51'], note: 'Requires the mechanical W option on the device as well.' },
+    'EB W':    { series: ['V40','V50','V51'], requiresDeviceW: true },
     'ED':      { series: ['V40','V50','V51'] },
     'ER EX':   { series: ['V40','V50','V51'], note: 'Requires a logic controller & power supply, not included — see Lookup, POWER SUPPLIES & LOGIC CONTROLLERS category (no specific model is named for Value Series in the catalog).' },
-    'ER EX W': { series: ['V40','V50','V51'], note: 'Requires the mechanical W option on the device as well, plus a logic controller/power supply (not included) — see Lookup, POWER SUPPLIES & LOGIC CONTROLLERS category.' },
+    'ER EX W': { series: ['V40','V50','V51'], note: 'Also requires a logic controller/power supply (not included) — see Lookup, POWER SUPPLIES & LOGIC CONTROLLERS category.', requiresDeviceW: true },
     'ES':      { series: ['V40'] },
     'EE':      { series: ['V40','V50','V51'], note: 'Includes its own power supply.' },
     'EEX':     { series: ['V40','V50','V51'], note: 'Non-weatherized devices, 36" and longer, only. Requires a logic controller, not included — see Lookup, POWER SUPPLIES & LOGIC CONTROLLERS category.' },
-    'EEX W':   { series: ['V40','V50','V51'], note: 'Requires the mechanical W option on the device as well, plus a logic controller (not included) — see Lookup, POWER SUPPLIES & LOGIC CONTROLLERS category.' },
+    'EEX W':   { series: ['V40','V50','V51'], note: 'Also requires a logic controller (not included) — see Lookup, POWER SUPPLIES & LOGIC CONTROLLERS category.', requiresDeviceW: true },
     'EI':      { series: ['V40','V50','V51'], note: 'Requires a logic controller, not included — see Lookup, POWER SUPPLIES & LOGIC CONTROLLERS category.' },
     'EX':      { series: ['V40','V50','V51'] },
-    'EX W':    { series: ['V40','V50','V51'], note: 'Requires the mechanical W option on the device as well.' },
+    'EX W':    { series: ['V40','V50','V51'], requiresDeviceW: true },
     'EXV':     { series: ['V40','V50','V51'] },
-    'EXV W':   { series: ['V40','V50','V51'], note: 'Requires the mechanical W option on the device as well.' },
+    'EXV W':   { series: ['V40','V50','V51'], requiresDeviceW: true },
   },
 };
 
@@ -169,6 +169,7 @@ function buildAssembledSku(raw) {
   });
 
   let deviceFinishToken = null, trimFinishToken = null, widthToken = null, cylinderToken = null;
+  let deviceWAdded = false;
   const lines = [];
   const unresolved = [];
 
@@ -207,6 +208,10 @@ function buildAssembledSku(raw) {
       return;
     }
     if (rules.options[upper] !== undefined) {
+      if (upper === 'W') {
+        if (deviceWAdded) return; // already priced via an electrified *_W option's auto-add
+        deviceWAdded = true;
+      }
       const o = rules.options[upper];
       lines.push({ label: `${upper} — ${o.label}`, price: o.price, page: o.page });
       return;
@@ -233,6 +238,15 @@ function buildAssembledSku(raw) {
         }
       }
       lines.push({ label: `${upper} — ${rec.desc}`, price: rec.price, page: null, note });
+      if (elig.requiresDeviceW && !deviceWAdded && rules.options['W']) {
+        deviceWAdded = true;
+        lines.push({
+          label: `W — ${rules.options['W'].label} (device)`,
+          price: rules.options['W'].price,
+          page: rules.options['W'].page,
+          note: `Auto-added: ${upper}'s own catalog listing requires the device to also carry the mechanical W option.`,
+        });
+      }
       return;
     }
     if (GLOBAL_OPTION_INFO[upper]) {
