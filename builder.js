@@ -241,10 +241,9 @@ function buildAssembledSku(raw) {
       if (elig.requiresDeviceW && !deviceWAdded && rules.options['W']) {
         deviceWAdded = true;
         lines.push({
-          label: `W — ${rules.options['W'].label} (device)`,
+          label: `W — ${rules.options['W'].label} (device, required with ${upper})`,
           price: rules.options['W'].price,
           page: rules.options['W'].page,
-          note: `Auto-added: ${upper}'s own catalog listing requires the device to also carry the mechanical W option.`,
         });
       }
       return;
