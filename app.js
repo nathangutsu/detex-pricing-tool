@@ -349,7 +349,8 @@ function buildEmailText() {
     } else if (l.desc) {
       lines.push(`   ${l.desc}`);
     }
-    lines.push(`   Qty ${l.qty} x ${money(netUnit)} = ${money(extNet)}  (list ${money(l.listPrice)}, ${l.discountPct}% off)`);
+    const multStr = mult.toFixed(2).replace(/^0\./, '.');
+    lines.push(`   Qty ${l.qty} x ${money(netUnit)} = ${money(extNet)}  (@ ${multStr})`);
     lines.push('');
   });
 
