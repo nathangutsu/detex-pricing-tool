@@ -14,14 +14,16 @@ function loadState() {
     const d = localStorage.getItem(STORAGE_DISCOUNT);
     if (d !== null && !isNaN(parseFloat(d))) state.discountPct = parseFloat(d);
   } catch (e) {}
-  try {
-    const q = localStorage.getItem(STORAGE_QUOTE);
-    if (q) state.quote = JSON.parse(q);
-  } catch (e) {}
+  // Quotes intentionally do NOT persist across page loads — every visit starts with an empty
+  // quote so stale line items from an earlier session can never linger. Clean up any quote
+  // data a prior version of this app may have left in localStorage.
+  try { localStorage.removeItem(STORAGE_QUOTE); } catch (e) {}
 }
 
 function saveQuote() {
-  try { localStorage.setItem(STORAGE_QUOTE, JSON.stringify(state.quote)); } catch (e) {}
+  // No-op by design — see loadState(). Kept as a named function since it's called throughout
+  // the quote-editing code paths; state.quote itself is still the in-memory source of truth
+  // for the current page session.
 }
 function saveDiscount() {
   try { localStorage.setItem(STORAGE_DISCOUNT, String(state.discountPct)); } catch (e) {}
