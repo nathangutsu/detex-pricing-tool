@@ -350,7 +350,7 @@ function buildEmailText() {
       lines.push(`   ${l.desc}`);
     }
     const multStr = mult.toFixed(2).replace(/^0\./, '.');
-    lines.push(`   Qty ${l.qty} x ${money(netUnit)} = ${money(extNet)}  (@ ${multStr})`);
+    lines.push(`   Qty ${l.qty} x ${money(netUnit)} = ${money(extNet)}  (net @ ${multStr})`);
     lines.push('');
   });
 
