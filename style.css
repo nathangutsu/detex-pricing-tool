@@ -340,6 +340,23 @@ table.quote-table input[type="number"] {
   font-family: var(--mono);
 }
 
+.qb-breakdown {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.qb-breakdown-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 0.78rem;
+  line-height: 1.4;
+}
+
+.qb-breakdown-row span:first-child { color: var(--text-1); }
+.qb-breakdown-row span.num { font-family: var(--mono); color: var(--text-2); white-space: nowrap; }
+
 .qb-qty { width: 56px; }
 .qb-disc { width: 64px; }
 
@@ -442,6 +459,7 @@ footer.foot b { color: var(--text-1); }
   .card, table.quote-table, .totals-card, .discount-bar { border-color: #ccc !important; background: #fff !important; }
   table.quote-table th { background: #eee !important; color: #000 !important; }
   table.quote-table td { color: #000 !important; }
+  .qb-breakdown-row span { color: #000 !important; }
   .totals-card .tot .val { color: #000 !important; }
 }
 

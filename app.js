@@ -218,6 +218,7 @@ function renderSkuResult() {
     state.quote.push({
       part: raw.trim(),
       desc: result.lines.map(l => l.label).join('; '),
+      breakdown: result.lines.map(l => ({ label: l.label, price: l.price })),
       cat: `DEVICE BUILDER — ${result.seriesLabel}`,
       uoi: 'EA.',
       listPrice: result.total,
@@ -272,6 +273,13 @@ function initDiscountBar() {
 }
 
 // ---------- Quote builder ----------
+function renderQuoteDesc(l) {
+  if (!l.breakdown || l.breakdown.length === 0) return escapeHtml(l.desc);
+  return `<div class="qb-breakdown">${l.breakdown.map(b => `
+    <div class="qb-breakdown-row"><span>${escapeHtml(b.label)}</span><span class="num">${money(b.price)}</span></div>
+  `).join('')}</div>`;
+}
+
 function renderQuote() {
   const tbody = document.getElementById('quoteBody');
   const wrap = document.getElementById('quoteTableWrap');
@@ -305,7 +313,7 @@ function renderQuote() {
           <div class="part-no">${escapeHtml(l.part)}</div>
           <div class="fam-line">${escapeHtml(l.cat)}</div>
         </td>
-        <td style="max-width:280px;">${escapeHtml(l.desc)}${l.note ? `<div class="note-flag">⚠ ${escapeHtml(l.note)}</div>` : ''}</td>
+        <td style="max-width:320px;">${renderQuoteDesc(l)}${l.note ? `<div class="note-flag">⚠ ${escapeHtml(l.note)}</div>` : ''}</td>
         <td class="num">${money(l.listPrice)}</td>
         <td><input type="number" class="qb-disc" min="0" max="100" step="0.1" value="${l.discountPct}" onchange="updateQuoteLine(${i}, 'discountPct', this.value)">%</td>
         <td class="num">${money(netUnit)}</td>
@@ -336,7 +344,11 @@ function buildEmailText() {
     listTotal += l.listPrice * l.qty;
     netTotal += extNet;
     lines.push(`${i + 1}. ${l.part}`);
-    if (l.desc) lines.push(`   ${l.desc}`);
+    if (l.breakdown && l.breakdown.length) {
+      l.breakdown.forEach(b => lines.push(`   - ${b.label}: ${money(b.price)}`));
+    } else if (l.desc) {
+      lines.push(`   ${l.desc}`);
+    }
     lines.push(`   Qty ${l.qty} x ${money(netUnit)} = ${money(extNet)}  (list ${money(l.listPrice)}, ${l.discountPct}% off)`);
     lines.push('');
   });
