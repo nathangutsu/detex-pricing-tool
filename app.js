@@ -324,7 +324,7 @@ function renderQuote() {
 function buildEmailText() {
   if (state.quote.length === 0) return '';
   const lines = [];
-  lines.push('DETEX Pricing Quote');
+  lines.push('DETEX Pricing');
   lines.push('Prepared ' + new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }));
   lines.push('');
 
