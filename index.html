@@ -78,14 +78,18 @@
 
     <div class="quote-actions no-print">
       <button class="btn ghost" id="clearQuoteBtn">Clear Quote</button>
-      <button class="btn ghost" id="csvQuoteBtn">Copy as CSV</button>
+      <button class="btn ghost" id="emailQuoteBtn">Copy for Email</button>
       <button class="btn" id="printQuoteBtn">Print / Save as PDF</button>
     </div>
 
     <div class="totals-card" id="quoteTotals">
       <div class="tot list"><div class="label">List Total</div><div class="val" id="totListVal">$0.00</div></div>
-      <div class="tot savings"><div class="label">Total Savings</div><div class="val" id="totSavingsVal">$0.00</div></div>
       <div class="tot net"><div class="label">Net Total</div><div class="val" id="totNetVal">$0.00</div></div>
+    </div>
+
+    <div class="email-preview-wrap no-print" id="emailPreviewWrap">
+      <div class="results-meta">Email preview — click "Copy for Email" to copy this text, then paste it into your email.</div>
+      <textarea id="emailPreviewBox" class="email-preview-box" readonly spellcheck="false"></textarea>
     </div>
   </div>
 

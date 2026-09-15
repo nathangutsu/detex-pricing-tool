@@ -382,6 +382,30 @@ table.quote-table input[type="number"] {
 .totals-card .tot.net .val { color: var(--green); }
 .totals-card .tot.savings .val { color: var(--amber); }
 
+.email-preview-wrap {
+  margin-top: 16px;
+}
+
+.email-preview-box {
+  width: 100%;
+  min-height: 220px;
+  resize: vertical;
+  background: var(--bg-2);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius);
+  color: var(--text-0);
+  font-family: var(--mono);
+  font-size: 0.82rem;
+  line-height: 1.5;
+  padding: 14px 16px;
+  margin-top: 8px;
+}
+
+.email-preview-box:focus {
+  outline: none;
+  border-color: var(--blue);
+}
+
 .toast {
   position: fixed;
   bottom: 24px;
@@ -413,7 +437,7 @@ footer.foot {
 footer.foot b { color: var(--text-1); }
 
 @media print {
-  .tabs, .toolbar, .quote-actions, .discount-bar .btn, footer.foot .no-print, header.top .tabs { display: none !important; }
+  .tabs, .toolbar, .quote-actions, .email-preview-wrap, .discount-bar .btn, footer.foot .no-print, header.top .tabs { display: none !important; }
   body { background: #fff !important; color: #000 !important; }
   .card, table.quote-table, .totals-card, .discount-bar { border-color: #ccc !important; background: #fff !important; }
   table.quote-table th { background: #eee !important; color: #000 !important; }

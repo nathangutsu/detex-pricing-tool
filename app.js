@@ -281,6 +281,7 @@ function renderQuote() {
     wrap.style.display = 'none';
     emptyMsg.style.display = 'block';
     document.getElementById('quoteTotals').style.display = 'none';
+    updateEmailPreview();
     return;
   }
   wrap.style.display = '';
@@ -316,7 +317,47 @@ function renderQuote() {
 
   document.getElementById('totListVal').textContent = money(listTotal);
   document.getElementById('totNetVal').textContent = money(netTotal);
-  document.getElementById('totSavingsVal').textContent = money(listTotal - netTotal);
+
+  updateEmailPreview();
+}
+
+function buildEmailText() {
+  if (state.quote.length === 0) return '';
+  const lines = [];
+  lines.push('DETEX Pricing Quote');
+  lines.push('Prepared ' + new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }));
+  lines.push('');
+
+  let listTotal = 0, netTotal = 0;
+  state.quote.forEach((l, i) => {
+    const mult = multiplierFromPct(l.discountPct);
+    const netUnit = l.listPrice * mult;
+    const extNet = netUnit * l.qty;
+    listTotal += l.listPrice * l.qty;
+    netTotal += extNet;
+    lines.push(`${i + 1}. ${l.part}`);
+    if (l.desc) lines.push(`   ${l.desc}`);
+    lines.push(`   Qty ${l.qty} x ${money(netUnit)} = ${money(extNet)}  (list ${money(l.listPrice)}, ${l.discountPct}% off)`);
+    lines.push('');
+  });
+
+  lines.push('----------------------------------------');
+  lines.push(`List Total:  ${money(listTotal)}`);
+  lines.push(`Net Total:   ${money(netTotal)}`);
+
+  return lines.join('\n');
+}
+
+function updateEmailPreview() {
+  const box = document.getElementById('emailPreviewBox');
+  const wrap = document.getElementById('emailPreviewWrap');
+  if (state.quote.length === 0) {
+    wrap.style.display = 'none';
+    box.value = '';
+    return;
+  }
+  wrap.style.display = '';
+  box.value = buildEmailText();
 }
 
 window.updateQuoteLine = function (i, field, value) {
@@ -344,22 +385,14 @@ function initQuoteActions() {
 
   document.getElementById('printQuoteBtn').addEventListener('click', () => window.print());
 
-  document.getElementById('csvQuoteBtn').addEventListener('click', () => {
-    const rows = [['Qty', 'Part Number', 'Category', 'Description', 'List Price', 'Discount %', 'Net Unit', 'Extended Net']];
-    state.quote.forEach(l => {
-      const mult = multiplierFromPct(l.discountPct);
-      const netUnit = l.listPrice * mult;
-      rows.push([l.qty, l.part, l.cat, l.desc, l.listPrice.toFixed(2), l.discountPct, netUnit.toFixed(2), (netUnit * l.qty).toFixed(2)]);
-    });
-    const csv = rows.map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\n');
-    navigator.clipboard.writeText(csv).then(() => showToast('Quote copied to clipboard as CSV')).catch(() => {
-      const ta = document.createElement('textarea');
-      ta.value = csv;
-      document.body.appendChild(ta);
-      ta.select();
+  document.getElementById('emailQuoteBtn').addEventListener('click', () => {
+    if (state.quote.length === 0) return;
+    const text = buildEmailText();
+    navigator.clipboard.writeText(text).then(() => showToast('Quote copied — paste into your email')).catch(() => {
+      const box = document.getElementById('emailPreviewBox');
+      box.select();
       document.execCommand('copy');
-      document.body.removeChild(ta);
-      showToast('Quote copied to clipboard as CSV');
+      showToast('Quote copied — paste into your email');
     });
   });
 }
