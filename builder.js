@@ -15,24 +15,47 @@ Object.keys(SERIES_RULES).forEach(sk => {
   if (!GLOBAL_OPTION_INFO[c]) GLOBAL_OPTION_INFO[c] = { label: c, page: null };
 });
 
-// Electrified options exist as flat rows in DETEX_DATA (cat 'ADVANTEX' or 'VALUE SERIES')
-// with per-code eligibility spelled out in their own descriptions. Prices are looked up live
-// from DETEX_DATA (not hardcoded) so a data.js regeneration stays authoritative automatically;
-// only the eligibility subsets and cross-requirement notes below were read off those descriptions.
+// Electrified FUNCTIONS (EA, EE, ER EX, ...) exist as flat rows in DETEX_DATA (cat 'ADVANTEX' or
+// 'VALUE SERIES') with per-code eligibility spelled out in their own descriptions. Their prices are
+// looked up live from DETEX_DATA so a data.js regeneration stays authoritative automatically; only
+// the eligibility subsets and cross-requirement notes below were read off those descriptions.
+// Each function's own OPTIONS and ACCESSORIES (conduit kits, keystop, silent arming, controllers,
+// ...) live in ELECTRIFIED_OPTIONS (electrified.js, transcribed from the PDF's per-function pages).
 const ELECTRIFIED_COMPOUND_CODES = ['EE ER EX', 'ER EX W', 'EB W', 'EEX W', 'EX W', 'EXV W', 'ER EX'];
+
+// catGroup -> { CODE -> [ { host, kind: 'option'|'accessory', code, label, price, page, controller? } ] }
+const ELEC_OPTION_INDEX = {};
+const ELEC_DASHED_CODES = new Set(); // multi-piece codes typed with dashes, e.g. PT-5, EWH8-626, 81-800
+Object.keys(ELECTRIFIED_OPTIONS).forEach(g => {
+  const idx = {};
+  Object.keys(ELECTRIFIED_OPTIONS[g]).forEach(host => {
+    const h = ELECTRIFIED_OPTIONS[g][host];
+    ['options', 'accessories'].forEach(kind => {
+      Object.keys(h[kind]).forEach(code => {
+        const key = code.toUpperCase();
+        (idx[key] = idx[key] || []).push(Object.assign({ host, kind: kind === 'options' ? 'option' : 'accessory', code }, h[kind][code]));
+        if (key.includes('-')) ELEC_DASHED_CODES.add(key);
+      });
+    });
+  });
+  ELEC_OPTION_INDEX[g] = idx;
+});
+
+// Options that only apply to specific device series (per the option's own catalog line).
+const OPTION_SERIES_RESTRICT = { 'LBM': ['V40'] };
 
 const ELECTRIFIED_ELIGIBILITY = {
   ADVANTEX: {
     'EA':      { series: ['10','20','40','60'] },
     'EB W':    { series: ['10','20','40'], note: 'Not available on 60 Series.', requiresDeviceW: true },
-    'ER EX':   { series: ['10','20','40','60'], note: 'Requires a power supply controller, not included — order separately.', controllerCodes: ['81-800*', '82-800*', '83-800*'] },
-    'ER EX W': { series: ['10','20','40'], note: 'Not available on 60 Series. Also requires a power supply controller (not included).', controllerCodes: ['81-800*', '82-800*', '83-800*'], requiresDeviceW: true },
-    'EI':      { series: ['10','40'], note: 'Requires a logic controller, not included — see Lookup, POWER SUPPLIES & LOGIC CONTROLLERS category.' },
+    'ER EX':   { series: ['10','20','40','60'], needsController: true },
+    'ER EX W': { series: ['10','20','40'], note: 'Not available on 60 Series.', requiresDeviceW: true, needsController: true },
+    'EI':      { series: ['10','40'], needsController: true },
     'ED':      { series: ['10','20','40','60'] },
     'EE':      { series: ['10','20','40','60'], note: 'Includes its own power supply.' },
-    'EEX':     { series: ['10','20','40'], note: 'Not available on 60 Series. Non-weatherized devices only. Requires a logic controller, not included — see Lookup, POWER SUPPLIES & LOGIC CONTROLLERS category.' },
-    'EEX W':   { series: ['10','20','40'], note: 'Not available on 60 Series. Also requires a logic controller (not included) — see Lookup, POWER SUPPLIES & LOGIC CONTROLLERS category.', requiresDeviceW: true },
-    'EE ER EX': { series: ['10','20','40','60'], note: 'Delayed Egress with Latch Retraction. Requires a power supply controller, not included — order separately.', controllerCodes: ['84-800**', '85-800**'] },
+    'EEX':     { series: ['10','20','40'], note: 'Not available on 60 Series. Non-weatherized devices only.', needsController: true },
+    'EEX W':   { series: ['10','20','40'], note: 'Not available on 60 Series.', requiresDeviceW: true, needsController: true },
+    'EE ER EX': { series: ['10','20','40','60'], needsController: true },
     'ES':      { series: ['10','40'] },
     'EX':      { series: ['10','20','40','60'] },
     'EX W':    { series: ['10','20','40'], note: 'Not available on 60 Series.', requiresDeviceW: true },
@@ -46,13 +69,13 @@ const ELECTRIFIED_ELIGIBILITY = {
     'EB':      { series: ['V40','V50','V51'] },
     'EB W':    { series: ['V40','V50','V51'], requiresDeviceW: true },
     'ED':      { series: ['V40','V50','V51'] },
-    'ER EX':   { series: ['V40','V50','V51'], note: 'Requires a logic controller & power supply, not included — see Lookup, POWER SUPPLIES & LOGIC CONTROLLERS category (no specific model is named for Value Series in the catalog).' },
-    'ER EX W': { series: ['V40','V50','V51'], note: 'Also requires a logic controller/power supply (not included) — see Lookup, POWER SUPPLIES & LOGIC CONTROLLERS category.', requiresDeviceW: true },
+    'ER EX':   { series: ['V40','V50','V51'], needsController: true },
+    'ER EX W': { series: ['V40','V50','V51'], requiresDeviceW: true, needsController: true },
     'ES':      { series: ['V40'] },
     'EE':      { series: ['V40','V50','V51'], note: 'Includes its own power supply.' },
-    'EEX':     { series: ['V40','V50','V51'], note: 'Non-weatherized devices, 36" and longer, only. Requires a logic controller, not included — see Lookup, POWER SUPPLIES & LOGIC CONTROLLERS category.' },
-    'EEX W':   { series: ['V40','V50','V51'], note: 'Also requires a logic controller (not included) — see Lookup, POWER SUPPLIES & LOGIC CONTROLLERS category.', requiresDeviceW: true },
-    'EI':      { series: ['V40','V50','V51'], note: 'Requires a logic controller, not included — see Lookup, POWER SUPPLIES & LOGIC CONTROLLERS category.' },
+    'EEX':     { series: ['V40','V50','V51'], note: 'Non-weatherized devices, 36" and longer, only.', needsController: true },
+    'EEX W':   { series: ['V40','V50','V51'], requiresDeviceW: true, needsController: true },
+    'EI':      { series: ['V40','V50','V51'], needsController: true },
     'EX':      { series: ['V40','V50','V51'] },
     'EX W':    { series: ['V40','V50','V51'], requiresDeviceW: true },
     'EXV':     { series: ['V40','V50','V51'] },
@@ -67,8 +90,11 @@ function mergeCompoundTokens(tokens) {
     let matched = null;
     for (let span = 3; span >= 2; span--) {
       if (i + span > tokens.length) continue;
-      const joined = tokens.slice(i, i + span).join(' ').toUpperCase();
-      if (ELECTRIFIED_COMPOUND_CODES.includes(joined)) { matched = { span, joined }; break; }
+      const slice = tokens.slice(i, i + span);
+      const spaced = slice.join(' ').toUpperCase();
+      if (ELECTRIFIED_COMPOUND_CODES.includes(spaced)) { matched = { span, joined: spaced }; break; }
+      const dashed = slice.join('-').toUpperCase();
+      if (ELEC_DASHED_CODES.has(dashed)) { matched = { span, joined: dashed }; break; }
     }
     if (matched) { out.push(matched.joined); i += matched.span; }
     else { out.push(tokens[i]); i += 1; }
@@ -91,6 +117,7 @@ function isKnownWholeToken(piece, seriesKey, rules, trimKeysUpper, catGroup) {
   if (rules.options[upper] !== undefined) return true;
   if (trimKeysUpper[upper]) return true;
   if (ELECTRIFIED_ELIGIBILITY[catGroup] && ELECTRIFIED_ELIGIBILITY[catGroup][upper]) return true;
+  if (ELEC_OPTION_INDEX[catGroup] && ELEC_OPTION_INDEX[catGroup][upper]) return true;
   return false;
 }
 
@@ -173,6 +200,15 @@ function buildAssembledSku(raw) {
   const lines = [];
   const unresolved = [];
 
+  // Electrified functions (eligible on this series) present in the string. Each function's options and
+  // accessories are only valid alongside the function that offers them, so options bind to these.
+  const restUpper = rest.map(t => t.toUpperCase());
+  const restSet = new Set(restUpper);
+  const presentHosts = restUpper.filter((t, i) => {
+    const e = ELECTRIFIED_ELIGIBILITY[catGroup][t];
+    return e && e.series.includes(seriesKey) && restUpper.indexOf(t) === i;
+  });
+
   rest.forEach(tok => {
     const upper = tok.toUpperCase();
     if (trimCode && upper === trimCode.toUpperCase()) return;
@@ -227,17 +263,28 @@ function buildAssembledSku(raw) {
         unresolved.push(`"${tok}" should be available on ${rules.label} per catalog notes, but no priced row was found in the current data — possible data gap. Not priced.`);
         return;
       }
+      let price = rec.price;
+      let label = `${upper} — ${rec.desc}`;
+      let page = null;
+      // A function that the catalog also lists as an option of another function in this string
+      // (EX under ED, LX under EA/ER EX/ED/EE/...) is priced at that in-context option price.
+      const ctx = (ELEC_OPTION_INDEX[catGroup][upper] || []).find(e =>
+        e.kind === 'option' && e.host.toUpperCase() !== upper && presentHosts.includes(e.host.toUpperCase()));
+      if (ctx) {
+        price = ctx.price;
+        label = `${upper} — ${ctx.label} (option of ${ctx.host})`;
+        page = ctx.page;
+      }
       let note = elig.note;
-      if (elig.controllerCodes) {
-        const priced = elig.controllerCodes
-          .map(code => DETEX_DATA.find(r => r.part === code))
-          .filter(Boolean)
-          .map(r => `${r.part.replace(/\*+$/, '')} ($${r.price.toLocaleString()})`);
-        if (priced.length) {
-          note = `${note} Options: ${priced.join(' / ')} — see Lookup for door-count/use details, not included in this total.`;
+      if (elig.needsController) {
+        const hostData = ELECTRIFIED_OPTIONS[catGroup][upper];
+        const ctrls = hostData ? Object.keys(hostData.accessories).filter(c => hostData.accessories[c].controller) : [];
+        if (ctrls.length && !ctrls.some(c => restSet.has(c.toUpperCase()))) {
+          const listing = ctrls.map(c => `${c} ($${hostData.accessories[c].price.toLocaleString()})`).join(' / ');
+          note = [note, `Controller not included — options: ${listing}. Add one to this string to price it.`].filter(Boolean).join(' ');
         }
       }
-      lines.push({ label: `${upper} — ${rec.desc}`, price: rec.price, page: null, note });
+      lines.push({ label, price, page, note });
       if (elig.requiresDeviceW && !deviceWAdded && rules.options['W']) {
         deviceWAdded = true;
         lines.push({
@@ -246,6 +293,29 @@ function buildAssembledSku(raw) {
           page: rules.options['W'].page,
         });
       }
+      return;
+    }
+    const optEntries = ELEC_OPTION_INDEX[catGroup] && ELEC_OPTION_INDEX[catGroup][upper];
+    if (optEntries) {
+      if (OPTION_SERIES_RESTRICT[upper] && !OPTION_SERIES_RESTRICT[upper].includes(seriesKey)) {
+        unresolved.push(`"${tok}" is only available on ${OPTION_SERIES_RESTRICT[upper].join('/')} per the catalog, not ${rules.label}. Not priced.`);
+        return;
+      }
+      const hits = optEntries.filter(e => presentHosts.includes(e.host.toUpperCase()));
+      if (hits.length === 0) {
+        const offered = [...new Set(optEntries.map(e => e.host))].join(', ');
+        unresolved.push(`"${tok}" is an electrified ${optEntries[0].kind} offered under ${offered} — none of those functions are in this string, so it wasn't priced.`);
+        return;
+      }
+      const e = hits[0];
+      if (hits.some(h => h.price !== e.price)) {
+        unresolved.push(`"${tok}" is priced differently depending on the function (${hits.map(h => `${h.host} $${h.price}`).join(' vs ')}) — priced under ${e.host}; confirm that's the one you meant.`);
+      }
+      lines.push({
+        label: `${e.code} — ${e.label} (${e.kind} of ${e.host})${e.price === 0 ? ' (no charge)' : ''}`,
+        price: e.price,
+        page: e.page,
+      });
       return;
     }
     if (GLOBAL_OPTION_INFO[upper]) {

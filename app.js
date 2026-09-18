@@ -36,7 +36,7 @@ function pctFromMultiplier(mult) {
   return Math.max(0, (1 - mult) * 100);
 }
 function money(n) {
-  return '$' + n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  return (n < 0 ? '-$' : '$') + Math.abs(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
 // ---------- Tabs ----------
