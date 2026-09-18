@@ -44,6 +44,13 @@ Object.keys(ELECTRIFIED_OPTIONS).forEach(g => {
 // Options that only apply to specific device series (per the option's own catalog line).
 const OPTION_SERIES_RESTRICT = { 'LBM': ['V40'] };
 
+// Functions the PDF lists as "Available on ... non-weatherized devices" (page numbers come from ELECTRIFIED_OPTIONS).
+// Pairing one with a weatherized (W) device gets flagged, not blocked.
+const ELEC_NON_WEATHERIZED = {
+  'ADVANTEX': new Set(['EA', 'ER EX', 'EI', 'ED', 'EE', 'EEX', 'EE ER EX', 'ES', 'EX', 'LX', 'LXV', 'EXV']),
+  'VALUE SERIES': new Set(['EA', 'EB', 'ED', 'ER EX', 'ES', 'EE', 'EEX', 'EI', 'EX', 'EXV']),
+};
+
 const ELECTRIFIED_ELIGIBILITY = {
   ADVANTEX: {
     'EA':      { series: ['10','20','40','60'] },
@@ -197,6 +204,7 @@ function buildAssembledSku(raw) {
 
   let deviceFinishToken = null, trimFinishToken = null, widthToken = null, cylinderToken = null;
   let deviceWAdded = false;
+  const nonWFnLines = [];
   const lines = [];
   const unresolved = [];
 
@@ -284,7 +292,9 @@ function buildAssembledSku(raw) {
           note = [note, `Controller not included — options: ${listing}. Add one to this string to price it.`].filter(Boolean).join(' ');
         }
       }
-      lines.push({ label, price, page, note });
+      const fnLine = { label, price, page, note };
+      lines.push(fnLine);
+      if (ELEC_NON_WEATHERIZED[catGroup].has(upper)) nonWFnLines.push({ line: fnLine, code: upper });
       if (elig.requiresDeviceW && !deviceWAdded && rules.options['W']) {
         deviceWAdded = true;
         lines.push({
@@ -311,11 +321,15 @@ function buildAssembledSku(raw) {
       if (hits.some(h => h.price !== e.price)) {
         unresolved.push(`"${tok}" is priced differently depending on the function (${hits.map(h => `${h.host} $${h.price}`).join(' vs ')}) — priced under ${e.host}; confirm that's the one you meant.`);
       }
-      lines.push({
+      const optLine = {
         label: `${e.code} — ${e.label} (${e.kind} of ${e.host})${e.price === 0 ? ' (no charge)' : ''}`,
         price: e.price,
         page: e.page,
-      });
+      };
+      if (e.pdfPrintedPrice !== undefined) {
+        optLine.note = `PDF p.${e.page} prints $${e.pdfPrintedPrice} for ${e.code} under ${e.host}, but the same part number is $${e.price} on the other pages and in the price list — priced at $${e.price}. Confirm.`;
+      }
+      lines.push(optLine);
       return;
     }
     if (GLOBAL_OPTION_INFO[upper]) {
@@ -325,6 +339,13 @@ function buildAssembledSku(raw) {
     }
     unresolved.push(`"${tok}" didn't match a known finish, width, option, or trim code for ${rules.label}. Not priced — verify manually.`);
   });
+
+  if (deviceWAdded) {
+    nonWFnLines.forEach(({ line, code }) => {
+      const msg = `${code} is listed for non-weatherized devices only (PDF p.${ELECTRIFIED_OPTIONS[catGroup][code].page}), but this device is weatherized (W) — verify before quoting.`;
+      line.note = [line.note, msg].filter(Boolean).join(' ');
+    });
+  }
 
   const finish = deviceFinishToken || DEVICE_FINISH_DEFAULT[seriesKey];
   const width = widthToken || '36';
