@@ -194,7 +194,7 @@ function renderSkuResult() {
   container.innerHTML = `
     <div class="card">
       <div class="card-head">
-        <span class="part-no">${escapeHtml(raw.trim())}</span>
+        <span class="part-no">${escapeHtml(result.partNumber)}</span>
         <span class="cat-pill">${escapeHtml(result.seriesLabel)}</span>
       </div>
       <div class="card-body" style="display:block;">
@@ -216,7 +216,7 @@ function renderSkuResult() {
 
   document.getElementById('skuAddToQuote').addEventListener('click', () => {
     state.quote.push({
-      part: raw.trim(),
+      part: result.partNumber,
       desc: result.lines.map(l => l.label).join('; '),
       breakdown: result.lines.map(l => ({ label: l.label, price: l.price, info: l.info || null })),
       cat: `DEVICE BUILDER — ${result.seriesLabel}`,

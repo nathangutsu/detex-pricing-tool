@@ -175,7 +175,7 @@ function pickTrimPrice(trimEntry, requestedFinish) {
 }
 
 function buildAssembledSku(raw) {
-  const input = (raw || '').trim();
+  const input = (raw || '').trim().toUpperCase(); // typed case never matters; everything echoed back is capitals
   if (!input) return { error: 'Enter a SKU string, e.g. V40x08BNx36xLDxWxIC7' };
 
   // Series prefix never contains "x" (10/20/40/60/V40/V50/V51), so the blanket split is safe
@@ -422,7 +422,7 @@ function buildAssembledSku(raw) {
   const total = allLines.reduce((s, l) => s + (l.price || 0), 0);
 
   return {
-    seriesKey, seriesLabel: rules.label, lines: allLines, unresolved, total,
+    partNumber: input, seriesKey, seriesLabel: rules.label, lines: allLines, unresolved, total,
     finish, width, trimCode,
   };
 }
