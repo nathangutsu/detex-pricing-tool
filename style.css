@@ -346,6 +346,15 @@ table.quote-table input[type="number"] {
   gap: 4px;
 }
 
+.info-line {
+  margin-top: 4px;
+  font-size: 0.76rem;
+  line-height: 1.4;
+  color: var(--text-2);
+}
+
+.qb-breakdown-item { display: flex; flex-direction: column; }
+
 .qb-breakdown-row {
   display: flex;
   justify-content: space-between;
@@ -459,7 +468,7 @@ footer.foot b { color: var(--text-1); }
   .card, table.quote-table, .totals-card, .discount-bar { border-color: #ccc !important; background: #fff !important; }
   table.quote-table th { background: #eee !important; color: #000 !important; }
   table.quote-table td { color: #000 !important; }
-  .qb-breakdown-row span { color: #000 !important; }
+  .qb-breakdown-row span, .info-line { color: #000 !important; }
   .totals-card .tot .val { color: #000 !important; }
 }
 

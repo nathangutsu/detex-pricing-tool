@@ -53,34 +53,34 @@ const ELEC_NON_WEATHERIZED = {
 
 const ELECTRIFIED_ELIGIBILITY = {
   ADVANTEX: {
-    'EA':      { series: ['10','20','40','60'], note: 'EA alarm can be hardwired with 12V AC/DC through 24V AC/DC (PDF p.35).' },
-    'EB W':    { series: ['10','20','40'], note: 'Not available on 60 Series.', requiresDeviceW: true },
+    'EA':      { series: ['10','20','40','60'], info: 'EA alarm can be hardwired with 12V AC/DC through 24V AC/DC (PDF p.35).' },
+    'EB W':    { series: ['10','20','40'], requiresDeviceW: true },
     'ER EX':   { series: ['10','20','40','60'], needsController: true },
-    'ER EX W': { series: ['10','20','40'], note: 'Not available on 60 Series. If mounting outside, NEMA enclosure required (PDF p.36).', requiresDeviceW: true, needsController: true },
+    'ER EX W': { series: ['10','20','40'], info: 'If mounting outside, NEMA enclosure required (PDF p.36).', requiresDeviceW: true, needsController: true },
     'EI':      { series: ['10','40'], needsController: true },
-    'ED':      { series: ['10','20','40','60'], note: 'A 24V power supply or logic controller is required for ED but not included. Most applications with ED require a power switch — see PDF p.105 (note on p.37).' },
-    'EE':      { series: ['10','20','40','60'], note: 'Detex power supply required and included with the standard EE package; it can power the devices on a pair of doors — add PS0 (Less Power Supply, subtracts $225) to the second door\'s EE (PDF p.38: "specify 10 EE PS0 for second door").' },
-    'EEX':     { series: ['10','20','40'], note: 'Not available on 60 Series. Non-weatherized devices only.', needsController: true },
-    'EEX W':   { series: ['10','20','40'], note: 'Not available on 60 Series.', requiresDeviceW: true, needsController: true },
-    'EE ER EX': { series: ['10','20','40','60'], needsController: true, note: 'For options such as silent arming, arming times, set grant times, keystop (armed when key removed), rearm using key only, and access-control-only bypasses (RKO), see the power supply controllers on PDF pp.66-67.' },
-    'ES':      { series: ['10','40'], note: 'A logic controller is required but not included in the standard package (PDF p.39 — its wording says "EI", which looks like a typo for ES).' },
+    'ED':      { series: ['10','20','40','60'], warn: 'A 24V power supply or logic controller is required for ED but not included. Most applications with ED require a power switch — see PDF p.105 (note on p.37).' },
+    'EE':      { series: ['10','20','40','60'], info: 'Detex power supply required and included with the standard EE package; it can power the devices on a pair of doors — add PS0 (Less Power Supply, subtracts $225) to the second door\'s EE (PDF p.38: "specify 10 EE PS0 for second door").' },
+    'EEX':     { series: ['10','20','40'], info: 'Non-weatherized devices, 36" and longer, only (PDF p.38).', needsController: true },
+    'EEX W':   { series: ['10','20','40'], requiresDeviceW: true, needsController: true },
+    'EE ER EX': { series: ['10','20','40','60'], needsController: true, info: 'For options such as silent arming, arming times, set grant times, keystop (armed when key removed), rearm using key only, and access-control-only bypasses (RKO), see the power supply controllers on PDF pp.66-67.' },
+    'ES':      { series: ['10','40'], warn: 'A logic controller is required but not included in the standard package (PDF p.39 — its wording says "EI", which looks like a typo for ES).' },
     'EX':      { series: ['10','20','40','60'] },
-    'EX W':    { series: ['10','20','40'], note: 'Not available on 60 Series.', requiresDeviceW: true },
+    'EX W':    { series: ['10','20','40'], requiresDeviceW: true },
     'EXV':     { series: ['10','20','40','60'] },
-    'EXV W':   { series: ['10','20','40'], note: 'Not available on 60 Series.', requiresDeviceW: true },
-    'LX':      { series: ['10','40','60'], note: 'Latch Bolt Signaling. Also available on 70/80 Series (not yet supported by this builder).' },
-    'LXV':     { series: ['10','40'], note: 'Latch Bolt Signaling for High Current.' },
+    'EXV W':   { series: ['10','20','40'], requiresDeviceW: true },
+    'LX':      { series: ['10','40','60'] },
+    'LXV':     { series: ['10','40'] },
   },
   'VALUE SERIES': {
     'EA':      { series: ['V40','V50','V51'] },
     'EB':      { series: ['V40','V50','V51'] },
     'EB W':    { series: ['V40','V50','V51'], requiresDeviceW: true },
-    'ED':      { series: ['V40','V50','V51'], note: 'A 24V power supply or logic controller is required for ED but not included. Most applications with ED require a power switch — see PDF p.105 (note on p.57).' },
+    'ED':      { series: ['V40','V50','V51'], warn: 'A 24V power supply or logic controller is required for ED but not included. Most applications with ED require a power switch — see PDF p.105 (note on p.57).' },
     'ER EX':   { series: ['V40','V50','V51'], needsController: true },
-    'ER EX W': { series: ['V40','V50','V51'], note: 'If mounting outside, NEMA enclosure required (PDF p.58).', requiresDeviceW: true, needsController: true },
-    'ES':      { series: ['V40'], note: 'A logic controller is required for ES but not included in the standard package (PDF p.58).' },
-    'EE':      { series: ['V40','V50','V51'], note: 'Detex power supply required and included with the standard EE package; it can power both devices on a pair of doors — add PS0 (Less Power Supply, subtracts $225) to the second door\'s EE (PDF p.59: "specify V40 EExPS0 for second door").' },
-    'EEX':     { series: ['V40','V50','V51'], note: 'Non-weatherized devices, 36" and longer, only.', needsController: true },
+    'ER EX W': { series: ['V40','V50','V51'], info: 'If mounting outside, NEMA enclosure required (PDF p.58).', requiresDeviceW: true, needsController: true },
+    'ES':      { series: ['V40'], warn: 'A logic controller is required for ES but not included in the standard package (PDF p.58).' },
+    'EE':      { series: ['V40','V50','V51'], info: 'Detex power supply required and included with the standard EE package; it can power both devices on a pair of doors — add PS0 (Less Power Supply, subtracts $225) to the second door\'s EE (PDF p.59: "specify V40 EExPS0 for second door").' },
+    'EEX':     { series: ['V40','V50','V51'], info: 'Non-weatherized devices, 36" and longer, only (PDF p.59).', needsController: true },
     'EEX W':   { series: ['V40','V50','V51'], requiresDeviceW: true, needsController: true },
     'EI':      { series: ['V40','V50','V51'], needsController: true },
     'EX':      { series: ['V40','V50','V51'] },
@@ -283,7 +283,7 @@ function buildAssembledSku(raw) {
         label = `${upper} — ${ctx.label} (option of ${ctx.host})`;
         page = ctx.page;
       }
-      let note = elig.note;
+      let note = elig.warn;
       if (elig.needsController) {
         const hostData = ELECTRIFIED_OPTIONS[catGroup][upper];
         const ctrls = hostData ? Object.keys(hostData.accessories).filter(c => hostData.accessories[c].controller) : [];
@@ -292,7 +292,7 @@ function buildAssembledSku(raw) {
           note = [note, `Controller not included — options: ${listing}. Add one to this string to price it.`].filter(Boolean).join(' ');
         }
       }
-      const fnLine = { label, price, page, note };
+      const fnLine = { label, price, page, note, info: elig.info };
       lines.push(fnLine);
       if (ELEC_NON_WEATHERIZED[catGroup].has(upper)) nonWFnLines.push({ line: fnLine, code: upper });
       if (elig.requiresDeviceW && !deviceWAdded && rules.options['W']) {

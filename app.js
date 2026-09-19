@@ -181,7 +181,7 @@ function renderSkuResult() {
 
   const rows = result.lines.map(l => `
     <tr>
-      <td>${escapeHtml(l.label)}${l.note ? `<div class="note-flag">⚠ ${escapeHtml(l.note)}</div>` : ''}</td>
+      <td>${escapeHtml(l.label)}${l.info ? `<div class="info-line">${escapeHtml(l.info)}</div>` : ''}${l.note ? `<div class="note-flag">⚠ ${escapeHtml(l.note)}</div>` : ''}</td>
       <td class="num">${money(l.price)}</td>
       <td class="fam-line">${l.page ? 'p.' + l.page : 'flat catalog'}</td>
     </tr>
@@ -218,7 +218,7 @@ function renderSkuResult() {
     state.quote.push({
       part: raw.trim(),
       desc: result.lines.map(l => l.label).join('; '),
-      breakdown: result.lines.map(l => ({ label: l.label, price: l.price })),
+      breakdown: result.lines.map(l => ({ label: l.label, price: l.price, info: l.info || null })),
       cat: `DEVICE BUILDER — ${result.seriesLabel}`,
       uoi: 'EA.',
       listPrice: result.total,
@@ -276,7 +276,10 @@ function initDiscountBar() {
 function renderQuoteDesc(l) {
   if (!l.breakdown || l.breakdown.length === 0) return escapeHtml(l.desc);
   return `<div class="qb-breakdown">${l.breakdown.map(b => `
-    <div class="qb-breakdown-row"><span>${escapeHtml(b.label)}</span><span class="num">${money(b.price)}</span></div>
+    <div class="qb-breakdown-item">
+      <div class="qb-breakdown-row"><span>${escapeHtml(b.label)}</span><span class="num">${money(b.price)}</span></div>
+      ${b.info ? `<div class="info-line">${escapeHtml(b.info)}</div>` : ''}
+    </div>
   `).join('')}</div>`;
 }
 
@@ -345,7 +348,10 @@ function buildEmailText() {
     netTotal += extNet;
     lines.push(`${i + 1}. ${l.part}`);
     if (l.breakdown && l.breakdown.length) {
-      l.breakdown.forEach(b => lines.push(`   - ${b.label}: ${money(b.price)}`));
+      l.breakdown.forEach(b => {
+        lines.push(`   - ${b.label}: ${money(b.price)}`);
+        if (b.info) lines.push(`     ${b.info}`);
+      });
     } else if (l.desc) {
       lines.push(`   ${l.desc}`);
     }
