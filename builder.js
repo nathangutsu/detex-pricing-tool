@@ -1,6 +1,7 @@
 // SKU Builder — decomposes an assembled DETEX device+trim+options string and prices each
 // component against SERIES_RULES (rules.js) and the flat catalog (DETEX_DATA, data.js).
-// Phase 1 scope: 10, 20, 40, 60 (Advantex) and V40, V50, V51 (Value Series).
+// Covers Advantex 10, 20, 21, 27, 30, 40, 50, 51, 60-63, 70, 71, 80-83, 87 and Value Series V40, V50, V51
+// (rules.js). Dummy devices (00/05, 01/04), the narrow-stile Value variants and FSB levers are not built here.
 
 const GLOBAL_OPTION_INFO = {}; // code -> { label, page } across all series, for "not available on this series" messages
 Object.keys(SERIES_RULES).forEach(sk => {
@@ -41,6 +42,15 @@ Object.keys(ELECTRIFIED_OPTIONS).forEach(g => {
   ELEC_OPTION_INDEX[g] = idx;
 });
 
+// trim code -> series that offer it, so a trim typed for the wrong series gets a useful message
+const TRIM_OFFERED = {};
+Object.keys(SERIES_RULES).forEach(sk => {
+  const r = SERIES_RULES[sk];
+  Object.keys(Object.assign({}, r.pulls, r.levers)).forEach(code => {
+    (TRIM_OFFERED[code.toUpperCase()] = TRIM_OFFERED[code.toUpperCase()] || []).push(sk);
+  });
+});
+
 // Options that only apply to specific device series (per the option's own catalog line).
 const OPTION_SERIES_RESTRICT = { 'LBM': ['V40'] };
 
@@ -51,25 +61,31 @@ const ELEC_NON_WEATHERIZED = {
   'VALUE SERIES': new Set(['EA', 'EB', 'ED', 'ER EX', 'ES', 'EE', 'EEX', 'EI', 'EX', 'EXV']),
 };
 
+// Eligible Advantex series per electrified function, from the "Available on ..." line on each function page
+// (PDF pp.35-41; where the spreadsheet's own description differs, the PDF page wins).
+const ADV_ALL = ['10','20','21','27','30','40','50','51','60','61','62','63','70','71','80','81','82','83','87'];
+const ADV_W = ['10','20','21','40','50','51'];
+const ADV_LX = ['10','40','60','61','62','63','70','71','80','81','82','83'];
+
 const ELECTRIFIED_ELIGIBILITY = {
   ADVANTEX: {
-    'EA':      { series: ['10','20','40','60'], info: 'EA alarm can be hardwired with 12V AC/DC through 24V AC/DC (PDF p.35).' },
-    'EB W':    { series: ['10','20','40'], requiresDeviceW: true },
-    'ER EX':   { series: ['10','20','40','60'], needsController: true },
-    'ER EX W': { series: ['10','20','40'], info: 'If mounting outside, NEMA enclosure required (PDF p.36).', requiresDeviceW: true, needsController: true },
-    'EI':      { series: ['10','40'], needsController: true },
-    'ED':      { series: ['10','20','40','60'], warn: 'A 24V power supply or logic controller is required for ED but not included. Most applications with ED require a power switch — see PDF p.105 (note on p.37).' },
-    'EE':      { series: ['10','20','40','60'], info: 'Detex power supply required and included with the standard EE package; it can power the devices on a pair of doors — add PS0 (Less Power Supply, subtracts $225) to the second door\'s EE (PDF p.38: "specify 10 EE PS0 for second door").' },
-    'EEX':     { series: ['10','20','40'], info: 'Non-weatherized devices, 36" and longer, only (PDF p.38).', needsController: true },
-    'EEX W':   { series: ['10','20','40'], requiresDeviceW: true, needsController: true },
-    'EE ER EX': { series: ['10','20','40','60'], needsController: true, info: 'For options such as silent arming, arming times, set grant times, keystop (armed when key removed), rearm using key only, and access-control-only bypasses (RKO), see the power supply controllers on PDF pp.66-67.' },
-    'ES':      { series: ['10','40'], warn: 'A logic controller is required but not included in the standard package (PDF p.39 — its wording says "EI", which looks like a typo for ES).' },
-    'EX':      { series: ['10','20','40','60'] },
-    'EX W':    { series: ['10','20','40'], requiresDeviceW: true },
-    'EXV':     { series: ['10','20','40','60'] },
-    'EXV W':   { series: ['10','20','40'], requiresDeviceW: true },
-    'LX':      { series: ['10','40','60'] },
-    'LXV':     { series: ['10','40'] },
+    'EA':      { series: ADV_ALL, info: 'EA alarm can be hardwired with 12V AC/DC through 24V AC/DC (PDF p.35).' },
+    'EB W':    { series: ADV_W, requiresDeviceW: true },
+    'ER EX':   { series: ADV_ALL, needsController: true },
+    'ER EX W': { series: ADV_W, info: 'If mounting outside, NEMA enclosure required (PDF p.36).', requiresDeviceW: true, needsController: true },
+    'EI':      { series: ['10','30','40'], needsController: true },
+    'ED':      { series: ADV_ALL, warn: 'A 24V power supply or logic controller is required for ED but not included. Most applications with ED require a power switch — see PDF p.105 (note on p.37).' },
+    'EE':      { series: ADV_ALL, info: 'Detex power supply required and included with the standard EE package; it can power the devices on a pair of doors — add PS0 (Less Power Supply, subtracts $225) to the second door\'s EE (PDF p.38: "specify 10 EE PS0 for second door").' },
+    'EEX':     { series: ['10','20','30','40','50'], info: 'Non-weatherized devices, 36" and longer, only (PDF p.38).', needsController: true },
+    'EEX W':   { series: ['10','20','40','50'], requiresDeviceW: true, needsController: true },
+    'EE ER EX': { series: ADV_ALL, needsController: true, info: 'For options such as silent arming, arming times, set grant times, keystop (armed when key removed), rearm using key only, and access-control-only bypasses (RKO), see the power supply controllers on PDF pp.66-67.' },
+    'ES':      { series: ['10','30','40'], warn: 'A logic controller is required but not included in the standard package (PDF p.39 — its wording says "EI", which looks like a typo for ES).' },
+    'EX':      { series: ADV_ALL },
+    'EX W':    { series: ADV_W, requiresDeviceW: true },
+    'EXV':     { series: ADV_ALL },
+    'EXV W':   { series: ADV_W, requiresDeviceW: true },
+    'LX':      { series: ADV_LX },
+    'LXV':     { series: ADV_LX },
   },
   'VALUE SERIES': {
     'EA':      { series: ['V40','V50','V51'] },
@@ -161,12 +177,16 @@ function widthAdder(seriesKey, width, finish) {
   return null;
 }
 
+// When the string names no trim finish (or names one the trim isn't priced in) the trim's own standard
+// finish is used: the row the price list tags "(std.)".
+const TRIM_FINISH_ORDER = ['626', '630', '689', '628', '693', '695', '606', '612', '605', '611', '625', '629', '711'];
 function pickTrimPrice(trimEntry, requestedFinish) {
   if (requestedFinish && trimEntry.finishes[requestedFinish] != null) {
     return { price: trimEntry.finishes[requestedFinish], finish: requestedFinish, mixed: false };
   }
-  // Fall back to the first available (non-null) finish in the table's own column order.
-  const fallbackFinish = Object.keys(trimEntry.finishes).find(f => trimEntry.finishes[f] != null);
+  const fallbackFinish = (trimEntry.std && trimEntry.finishes[trimEntry.std] != null)
+    ? trimEntry.std
+    : TRIM_FINISH_ORDER.find(f => trimEntry.finishes[f] != null);
   if (fallbackFinish) {
     return { price: trimEntry.finishes[fallbackFinish], finish: fallbackFinish, mixed: true };
   }
@@ -183,7 +203,7 @@ function buildAssembledSku(raw) {
   const seriesKey = Object.keys(SERIES_RULES).find(k => k.toUpperCase() === seriesToken.toUpperCase());
   if (!seriesKey) {
     return {
-      error: `Series "${seriesToken}" isn't recognized, or isn't supported yet by the Device Builder. Phase 1 covers 10, 20, 40, 60 (Advantex) and V40, V50, V51 (Value Series). Try the Lookup tab if this is meant to be a single flat part number instead.`
+      error: `Series "${seriesToken}" isn't recognized, or isn't supported yet by the Device Builder. The Device Builder covers ${Object.keys(SERIES_RULES).join(', ')}. Try the Lookup tab if this is meant to be a single flat part number instead.`
     };
   }
   const rules = SERIES_RULES[seriesKey];
@@ -201,6 +221,8 @@ function buildAssembledSku(raw) {
     if (!trimCode && trimKeysUpper[tok.toUpperCase()]) trimCode = trimKeysUpper[tok.toUpperCase()];
   });
 
+  const trimEntryPre = trimCode ? trimTable[trimCode] : null;
+  const leverTrim = !!(trimEntryPre && trimEntryPre.lever);
   let deviceFinishToken = null, trimFinishToken = null, widthToken = null, cylinderToken = null;
   let deviceWAdded = false;
   const nonWFnLines = [];
@@ -256,7 +278,27 @@ function buildAssembledSku(raw) {
         deviceWAdded = true;
       }
       const o = rules.options[upper];
+      if (upper === 'T' && leverTrim) {
+        unresolved.push(`"${tok}" is priced as the Tornado Rated device option on ${rules.label}, so lever style T can't be specified in the same string.`);
+      }
       lines.push({ label: `${upper} — ${o.label}`, price: o.price, page: o.page });
+      return;
+    }
+    if (upper === 'S' || upper === 'T' || upper === 'U') {
+      if (!leverTrim) {
+        unresolved.push(`"${tok}" is a lever style and only applies with a lever trim. Not priced.`);
+        return;
+      }
+      lines.push({ label: `${upper} lever style (no charge)`, price: 0, page: trimEntryPre.page });
+      return;
+    }
+    if (upper === 'LS' || upper === 'KN') {
+      const lo = rules.leverOptions && rules.leverOptions[upper];
+      if (!leverTrim || !lo) {
+        unresolved.push(`"${tok}" (${upper === 'LS' ? 'lever switch' : 'knurling'}) ${leverTrim ? `isn't offered on ${rules.label} lever trims` : 'applies to lever trims only'}. Not priced.`);
+        return;
+      }
+      lines.push({ label: `${upper} — ${lo.label} (${trimCode})`, price: lo.price, page: lo.page });
       return;
     }
     const elig = ELECTRIFIED_ELIGIBILITY[catGroup] && ELECTRIFIED_ELIGIBILITY[catGroup][upper];
@@ -333,7 +375,11 @@ function buildAssembledSku(raw) {
     }
     if (GLOBAL_OPTION_INFO[upper]) {
       const g = GLOBAL_OPTION_INFO[upper];
-      unresolved.push(`"${tok}" (${g.label}) isn't available on ${rules.label}${g.page ? ' — see p.' + g.page + ' options list' : ''}. Not priced.`);
+      unresolved.push(`"${tok}" (${g.label}) isn't available on ${rules.label} — see p.${rules.devicePage} options list. Not priced.`);
+      return;
+    }
+    if (TRIM_OFFERED[upper]) {
+      unresolved.push(`"${tok}" is a trim for ${TRIM_OFFERED[upper].join(', ')} — it isn't offered with ${rules.label}. Not priced.`);
       return;
     }
     unresolved.push(`"${tok}" didn't match a known finish, width, option, or trim code for ${rules.label}. Not priced — verify manually.`);
