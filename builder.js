@@ -151,15 +151,14 @@ function findElectrifiedOption(catGroup, code) {
   return DETEX_DATA.find(r => r.cat === catGroup && r.part.toUpperCase() === upper) || null;
 }
 
-function findDevicePrice(seriesKey, finish, width) {
-  let pattern = `${seriesKey}x${finish}`;
-  if (width && width !== '36') pattern += `x${width}`;
-  const patUpper = pattern.toUpperCase();
-  return DETEX_DATA.find(r => {
-    if (r.cat !== 'ADVANTEX' && r.cat !== 'VALUE SERIES') return false;
-    const clean = r.part.replace(/\s*\(std\.\)\s*$/i, '').toUpperCase();
-    return clean === patUpper;
-  }) || null;
+// Width adders come straight from the PDF option lists: 48" is +$50 on every device page, and the
+// 10 Series alone offers 60" (+$353, in 628/693/695 only). The spreadsheet's own width rows are NOT
+// used: for the 20/21 and 60/61/62/63 Series they are scrambled (e.g. a 48" device cheaper than the 36").
+function widthAdder(seriesKey, width, finish) {
+  if (width === '36') return { add: 0 };
+  if (width === '48') return { add: 50 };
+  if (width === '60' && seriesKey === '10' && ['628', '693', '695'].includes(finish)) return { add: 353 };
+  return null;
 }
 
 function pickTrimPrice(trimEntry, requestedFinish) {
@@ -352,20 +351,31 @@ function buildAssembledSku(raw) {
   const finishAssumed = !deviceFinishToken;
   const widthAssumed = !widthToken;
 
-  if (!rules.widths.includes(parseInt(width, 10))) {
+  const widthListed = rules.widths.includes(parseInt(width, 10));
+  if (!widthListed) {
     unresolved.push(`${width}" width isn't listed for ${rules.label} (available widths: ${rules.widths.join('", ')}").`);
   }
 
-  const deviceRec = findDevicePrice(seriesKey, finish, width);
   const deviceLines = [];
-  if (!deviceRec) {
-    unresolved.push(`No catalog row found for ${seriesKey} device at finish ${finish}, ${width}" width. Check the finish/width combination against p.${rules.devicePage} — do not assume a price.`);
+  const baseTable = DEVICE_BASE[seriesKey];
+  const basePrice = baseTable ? baseTable.prices[finish] : undefined;
+  const adder = widthAdder(seriesKey, width, finish);
+  if (basePrice === undefined) {
+    unresolved.push(`No ${finish} finish price for ${rules.label} on p.${rules.devicePage} — check the finish against the device page. Device not priced.`);
+  } else if (!adder) {
+    if (widthListed) unresolved.push(`${width}" width isn't offered for ${rules.label} in ${finish} finish (p.${baseTable.page}). Device not priced.`);
   } else {
-    deviceLines.push({
-      label: `${rules.label} device, ${finish}${finishAssumed ? ' (default, not specified)' : ''}, ${width}"${widthAssumed ? ' (standard, not specified)' : ''}`,
-      price: deviceRec.price,
-      page: rules.devicePage,
-    });
+    const finishNote = finishAssumed ? ' (default, not specified)' : '';
+    if (adder.add === 0) {
+      deviceLines.push({
+        label: `${rules.label} device, ${finish}${finishNote}, ${width}"${widthAssumed ? ' (standard, not specified)' : ''}`,
+        price: basePrice,
+        page: baseTable.page,
+      });
+    } else {
+      deviceLines.push({ label: `${rules.label} device, ${finish}${finishNote}, 36" base`, price: basePrice, page: baseTable.page });
+      deviceLines.push({ label: `${width}" door width adder`, price: adder.add, page: baseTable.page });
+    }
   }
 
   if (trimCode) {
