@@ -99,43 +99,75 @@ function renderResults() {
     return;
   }
 
-  container.innerHTML = results.map((r, i) => {
-    const mult = multiplierFromPct(state.discountPct);
-    const net = r.price * mult;
-    const idx = DETEX_DATA.indexOf(r);
-    return `
-      <div class="card">
-        <div class="card-head">
-          <span class="part-no">${escapeHtml(r.part)}</span>
-          <span class="cat-pill">${escapeHtml(r.cat)}</span>
+  container.innerHTML = results.map(r => catalogCardHtml(r, DETEX_DATA.indexOf(r), 'qty')).join('');
+}
+
+// One catalog row as a card with qty + Add to Quote. `prefix` keeps the qty input ids unique per tab.
+function catalogCardHtml(r, idx, prefix) {
+  const net = r.price * multiplierFromPct(state.discountPct);
+  return `
+    <div class="card">
+      <div class="card-head">
+        <span class="part-no">${escapeHtml(r.part)}</span>
+        <span class="cat-pill">${escapeHtml(r.cat)}</span>
+      </div>
+      <div class="card-body">
+        <div class="desc">
+          ${escapeHtml(r.desc || '(no description)')}
+          <div class="fam-line">${escapeHtml(r.fam)} · ${escapeHtml(r.uoi)}${r.warr ? ' · ' + escapeHtml(r.warr) : ''}</div>
+          ${r.note ? `<div class="note-flag">⚠ ${escapeHtml(r.note)}</div>` : ''}
         </div>
-        <div class="card-body">
-          <div class="desc">
-            ${escapeHtml(r.desc || '(no description)')}
-            <div class="fam-line">${escapeHtml(r.fam)} · ${escapeHtml(r.uoi)}${r.warr ? ' · ' + escapeHtml(r.warr) : ''}</div>
-            ${r.note ? `<div class="note-flag">⚠ ${escapeHtml(r.note)}</div>` : ''}
-          </div>
-          <div class="price-block">
-            <div class="list-price">${money(r.price)}</div>
-            <div class="net-price">net ${money(net)} @ ${state.discountPct}% off</div>
-          </div>
-          <div class="add-controls">
-            <input type="number" class="qty-input" min="1" value="1" id="qty-${idx}">
-            <button class="btn" onclick="addToQuote(${idx})">Add to Quote</button>
-          </div>
+        <div class="price-block">
+          <div class="list-price">${money(r.price)}</div>
+          <div class="net-price">net ${money(net)} @ ${state.discountPct}% off</div>
+        </div>
+        <div class="add-controls">
+          <input type="number" class="qty-input" min="1" value="1" id="${prefix}-${idx}">
+          <button class="btn" onclick="addToQuote(${idx}, '${prefix}')">Add to Quote</button>
         </div>
       </div>
-    `;
-  }).join('');
+    </div>
+  `;
+}
+
+// Catalog part-number matching for the Device Builder: case-insensitive, ignoring the catalog's
+// trailing "*" footnote marks and "(std.)" tags.
+function catalogKey(part) {
+  return String(part).toUpperCase().replace(/\s*\(STD\.\)\s*$/, '').replace(/[\s*]+$/, '').trim();
+}
+let _catalogIndex = null;
+function catalogIndex() {
+  if (!_catalogIndex) {
+    _catalogIndex = new Map();
+    DETEX_DATA.forEach(r => {
+      const k = catalogKey(r.part);
+      if (!_catalogIndex.has(k)) _catalogIndex.set(k, []);
+      _catalogIndex.get(k).push(r);
+    });
+  }
+  return _catalogIndex;
+}
+function findCatalogExact(q) {
+  return catalogIndex().get(catalogKey(q)) || [];
+}
+function findCatalogNear(q, limit) {
+  const key = catalogKey(q);
+  const starts = [], contains = [];
+  catalogIndex().forEach((recs, k) => {
+    if (k.startsWith(key)) starts.push([k, recs]);
+    else if (k.includes(key)) contains.push([k, recs]);
+  });
+  const byLen = (x, y) => x[0].length - y[0].length || x[0].localeCompare(y[0]);
+  return starts.sort(byLen).concat(contains.sort(byLen)).flatMap(x => x[1]).slice(0, limit || 25);
 }
 
 function escapeHtml(s) {
   return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 }
 
-window.addToQuote = function (idx) {
+window.addToQuote = function (idx, prefix) {
   const r = DETEX_DATA[idx];
-  const qtyInput = document.getElementById(`qty-${idx}`);
+  const qtyInput = document.getElementById(`${prefix || 'qty'}-${idx}`);
   const qty = Math.max(1, parseInt(qtyInput.value, 10) || 1);
   const existing = state.quote.find(l => l.part === r.part && l.cat === r.cat);
   if (existing) {
@@ -170,8 +202,22 @@ function renderSkuResult() {
   const container = document.getElementById('skuResult');
   if (!raw.trim()) { container.innerHTML = ''; return; }
 
+  const typed = raw.trim().toUpperCase();
+  const exact = findCatalogExact(typed);
+  if (exact.length) {
+    container.innerHTML = `<div class="results-meta">Catalog part number ${escapeHtml(typed)} — priced straight from the price list.</div>`
+      + exact.map(r => catalogCardHtml(r, DETEX_DATA.indexOf(r), 'skuqty')).join('');
+    return;
+  }
+
   const result = buildAssembledSku(raw);
   if (result.error) {
+    const near = typed.length >= 3 ? findCatalogNear(typed) : [];
+    if (near.length) {
+      container.innerHTML = `<div class="results-meta">No exact catalog match for ${escapeHtml(typed)} and it isn't a buildable device string — closest catalog part numbers:</div>`
+        + near.map(r => catalogCardHtml(r, DETEX_DATA.indexOf(r), 'skuqty')).join('');
+      return;
+    }
     container.innerHTML = `<div class="card"><div class="card-body"><div class="note-flag">⚠ ${escapeHtml(result.error)}</div></div></div>`;
     return;
   }
