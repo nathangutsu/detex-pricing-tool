@@ -194,7 +194,8 @@ function pickTrimPrice(trimEntry, requestedFinish) {
 }
 
 function buildAssembledSku(raw) {
-  const input = (raw || '').trim().toUpperCase(); // typed case never matters; everything echoed back is capitals
+  let input = (raw || '').trim().toUpperCase(); // typed case never matters; everything echoed back is capitals
+  const typedInput = input;
   if (!input) return { error: 'Enter a SKU string, e.g. V40x08BNx36xLDxWxIC7' };
 
   if (/^ECL-/.test(input)) {
@@ -204,7 +205,19 @@ function buildAssembledSku(raw) {
 
   // Series prefix never contains "x" (10/20/40/60/V40/V50/V51), so the blanket split is safe
   // for extracting just the first token.
-  const seriesToken = input.split(/[-x]+/i)[0];
+  let seriesToken = input.split(/[-x]+/i)[0];
+  // Bid requests string things together: a fire-rated 10 Series with a 03C trim is "F1003C" — an optional
+  // F / FH / H prefix (PDF p.11: add prefix "F" for fire exit hardware, "H" for Florida Hurricane), then the
+  // series, then the trim code with no delimiter (PDF p.12: "specify exit device followed by trim, ex. 1008D").
+  if (!Object.keys(SERIES_RULES).some(k => k.toUpperCase() === seriesToken)) {
+    const m = seriesToken.match(/^(FH|F|H)?(V\d\d|\d\d)([A-Z0-9]*)$/);
+    const sKey = m && Object.keys(SERIES_RULES).find(k => k.toUpperCase() === m[2]);
+    if (sKey && (m[1] || m[3])) {
+      const remainder = input.slice(seriesToken.length);
+      input = `${sKey}${m[3] ? '-' + m[3] : ''}${m[1] ? '-' + m[1] : ''}${remainder}`;
+      seriesToken = sKey;
+    }
+  }
   const seriesKey = Object.keys(SERIES_RULES).find(k => k.toUpperCase() === seriesToken.toUpperCase());
   if (!seriesKey) {
     return {
@@ -229,7 +242,7 @@ function buildAssembledSku(raw) {
   const trimEntryPre = trimCode ? trimTable[trimCode] : null;
   const leverTrim = !!(trimEntryPre && trimEntryPre.lever);
   let deviceFinishToken = null, trimFinishToken = null, widthToken = null, cylinderToken = null;
-  let deviceWAdded = false;
+  let deviceWAdded = false, fireRated = false;
   const nonWFnLines = [];
   const lines = [];
   const unresolved = [];
@@ -286,7 +299,12 @@ function buildAssembledSku(raw) {
       if (upper === 'T' && leverTrim) {
         unresolved.push(`"${tok}" is priced as the Tornado Rated device option on ${rules.label}, so lever style T can't be specified in the same string.`);
       }
-      lines.push({ label: `${upper} — ${o.label}`, price: o.price, page: o.page });
+      const optLine = { label: `${upper} — ${o.label}`, price: o.price, page: o.page };
+      if (upper === 'F' || upper === 'FH') {
+        optLine.info = 'Fire Rated devices come Less Dogging (LD) only (PDF p.35).';
+        fireRated = true;
+      }
+      lines.push(optLine);
       return;
     }
     if (upper === 'S' || upper === 'T' || upper === 'U') {
@@ -479,11 +497,15 @@ function buildAssembledSku(raw) {
     });
   }
 
+  if (fireRated && restSet.has('CD')) {
+    unresolved.push('Fire Rated devices come Less Dogging (LD) only (PDF p.35), so CD (cylinder dogging) can\'t be combined with F/FH. Not priced as CD — verify.');
+  }
+
   const allLines = deviceLines.concat(lines);
   const total = allLines.reduce((s, l) => s + (l.price || 0), 0);
 
   return {
-    partNumber: input, seriesKey, seriesLabel: rules.label, lines: allLines, unresolved, total,
+    partNumber: typedInput, seriesKey, seriesLabel: rules.label, lines: allLines, unresolved, total,
     finish, width, trimCode,
   };
 }
