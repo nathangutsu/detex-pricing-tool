@@ -378,6 +378,46 @@ function renderQuote() {
   updateEmailPreview();
 }
 
+// Plain-text email helpers: long electrified-function paragraphs are wrapped with a hanging indent so
+// they line up under the component they belong to instead of running back to the left margin.
+const EMAIL_WIDTH = 78;
+function wrapEmail(text, firstPrefix, nextPrefix) {
+  const words = String(text).trim().split(/\s+/);
+  const out = [];
+  let cur = firstPrefix;
+  let empty = true;
+  words.forEach(w => {
+    if (!empty && (cur + ' ' + w).length > EMAIL_WIDTH) {
+      out.push(cur);
+      cur = nextPrefix + w;
+    } else {
+      cur += (empty ? '' : ' ') + w;
+    }
+    empty = false;
+  });
+  out.push(cur);
+  return out;
+}
+
+// One priced component: "- title: $price", then any long detail broken at its "; " items, then info.
+function emailComponentLines(b) {
+  const out = [];
+  const label = String(b.label);
+  const priceStr = money(b.price);
+  const cut = label.indexOf(' - ');
+  const title = cut > 0 && label.length > 70 ? label.slice(0, cut) : label;
+  const detail = cut > 0 && label.length > 70 ? label.slice(cut + 3) : '';
+  const titleLines = wrapEmail(title + ': ' + priceStr, '   - ', '     ');
+  out.push(...titleLines);
+  if (detail) {
+    detail.split(/;\s*/).filter(Boolean).forEach((seg, i) => {
+      out.push(...wrapEmail(seg, i === 0 ? '     ' : '     * ', i === 0 ? '     ' : '       '));
+    });
+  }
+  if (b.info) out.push(...wrapEmail(b.info, '     ', '     '));
+  return out;
+}
+
 function buildEmailText() {
   if (state.quote.length === 0) return '';
   const lines = [];
@@ -394,12 +434,9 @@ function buildEmailText() {
     netTotal += extNet;
     lines.push(`Line ${i + 1}: ${l.part}`);
     if (l.breakdown && l.breakdown.length) {
-      l.breakdown.forEach(b => {
-        lines.push(`   - ${b.label}: ${money(b.price)}`);
-        if (b.info) lines.push(`     ${b.info}`);
-      });
+      l.breakdown.forEach(b => lines.push(...emailComponentLines(b)));
     } else if (l.desc) {
-      lines.push(`   ${l.desc}`);
+      lines.push(...wrapEmail(l.desc, '   ', '   '));
     }
     lines.push(`   List: ${money(l.listPrice)}`);
     const multStr = mult.toFixed(2).replace(/^0\./, '.');
