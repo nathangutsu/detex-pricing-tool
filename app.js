@@ -392,7 +392,7 @@ function buildEmailText() {
     const extNet = netUnit * l.qty;
     listTotal += l.listPrice * l.qty;
     netTotal += extNet;
-    lines.push(`${i + 1}. ${l.part}`);
+    lines.push(`Line ${i + 1}: ${l.part}`);
     if (l.breakdown && l.breakdown.length) {
       l.breakdown.forEach(b => {
         lines.push(`   - ${b.label}: ${money(b.price)}`);
@@ -401,6 +401,7 @@ function buildEmailText() {
     } else if (l.desc) {
       lines.push(`   ${l.desc}`);
     }
+    lines.push(`   List: ${money(l.listPrice)}`);
     const multStr = mult.toFixed(2).replace(/^0\./, '.');
     lines.push(`   Qty ${l.qty} x ${money(netUnit)} = ${money(extNet)}  (net @ ${multStr})`);
     lines.push('');
