@@ -194,7 +194,10 @@ function pickTrimPrice(trimEntry, requestedFinish) {
 }
 
 function buildAssembledSku(raw) {
-  let input = (raw || '').trim().toUpperCase(); // typed case never matters; everything echoed back is capitals
+  // Typed case never matters; everything echoed back is capitals. People naturally write door widths
+  // with an inch mark (48", 48”, 48″) even though the SKU token is just the number — strip those so
+  // "48"" tokenizes the same as "48" instead of failing to match any width/option/trim code.
+  let input = (raw || '').trim().toUpperCase().replace(/["'’”″]/g, '');
   const typedInput = input;
   if (!input) return { error: 'Enter a SKU string, e.g. V40x08BNx36xLDxWxIC7' };
 
