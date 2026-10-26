@@ -31,7 +31,7 @@ DOGGING = json.loads(re.search(r'const DOGGING_CODES = new Set\((\[.*?\])\);', s
 # ------------------------------------------------------------------ PDF page text for verification
 NA = None
 with pdfplumber.open(PDF) as pdf:
-    PAGE = {n: re.sub(r'\s+', ' ', pdf.pages[n - 1].extract_text() or '') for n in (23, 24, 25, 26, 27, 49, 50, 52, 53)}
+    PAGE = {n: re.sub(r'\s+', ' ', pdf.pages[n - 1].extract_text() or '') for n in (23, 24, 25, 26, 27, 49, 50, 51, 52, 53)}
 
 def expand(cols, vals):
     out = {}
@@ -144,6 +144,23 @@ V_LEV_VR = {
   '09D2W': T(53, ['626', '693'], [755,811], 'mortise', 'Key unlocks lever, locked when key removed, vandal resistant', True),
   '14D2W': T(53, ['626', '693'], [755,811], None, 'Lever always active, vandal resistant', True),
 }
+# p.50 wide plates & pulls: 02WP (dummy wire pull) was missing from the Phase 1 Value tables.
+V_COLS_50 = ['626', '628', '630', '689', '695', '693', '711']
+V_PULLS_WIDE_EXTRA = {
+  '02WP': T(50, V_COLS_50, [NA,NA,354,NA,NA,NA,NA], None, 'Dummy pull (wire)'),
+}
+# p.51 NARROW PLATES & PULL TRIMS for Value Series (all of V40/V50/V51 are referred to pp.49-53 for trims;
+# the p.52 narrow levers list V40, V40xNS, V50/V51, V50xNS/V51xNS, and p.46/48 give examples such as V51 01PN).
+V_COLS_51 = ['628', '630', '689', '695', '693', '711']
+V_PULLS_NARROW = {
+  '01PN': T(51, V_COLS_51, [142,NA,NA,NA,NA,142], None, 'Cover plate'),
+  '03PN': T(51, V_COLS_51, [142,NA,NA,NA,NA,142], 'rim', 'Key retracts latch'),
+  '03CN': T(51, V_COLS_51, [NA,500,NA,713,713,NA], 'rim', 'Key retracts latch'),
+  '02AN': T(51, V_COLS_51, [NA,NA,155,155,155,NA], None, 'Dummy pull'),
+  '03AN': T(51, V_COLS_51, [NA,NA,155,155,155,NA], 'rim', 'Key retracts latch'),
+}
+for _t in V_PULLS_NARROW.values():
+    _t['finishes'].setdefault('626', None)
 V_EU = {'EU2W': T(49, ['626', '693'], [1581,1596], 'mortise', 'Electric lock/unlock lever (specify FSE fail secure std. or FSA fail safe, and handing)', True)}
 
 # ------------------------------------------------------------------ verify trim rows vs the PDF text
@@ -175,6 +192,7 @@ groups = {
   'WIDE_LEVERS_1020': WIDE_LEVERS_1020, 'WIDE_LEVERS_10': WIDE_LEVERS_10_ONLY, 'WIDE_LEVERS_30': WIDE_LEVERS_30,
   'WIDE_LEVERS_7080': WIDE_LEVERS_7080, 'NARROW_LEVERS_4050': NARROW_LEVERS_4050, 'NARROW_LEVERS_60': NARROW_LEVERS_60,
   'EU_1020': EU_1020, 'EU_30': EU_30, 'EU_7080': EU_7080, 'EU_4050': EU_4050, 'V_LEV_VR': V_LEV_VR, 'V_EU': V_EU,
+  'V_PULLS_WIDE_EXTRA': V_PULLS_WIDE_EXTRA, 'V_PULLS_NARROW': V_PULLS_NARROW,
 }
 ok = mism = missing = 0
 mism_list, miss_list = [], []
@@ -264,6 +282,7 @@ def patch_phase1():
         s[k]['leverOptions'] = lever_opts(26 if k in ('10', '20') else 27)
     for k in ('V40', 'V50', 'V51'):
         s[k]['levers'] = copy.deepcopy({**s[k]['levers'], **V_LEV_VR, **V_EU})
+        s[k]['pulls'] = copy.deepcopy({**s[k]['pulls'], **V_PULLS_WIDE_EXTRA, **V_PULLS_NARROW})
         s[k]['leverOptions'] = lever_opts(52, kn=False)
 patch_phase1()
 

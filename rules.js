@@ -1353,6 +1353,96 @@ const SERIES_RULES = {
     "fn": "Key retracts latch",
     "page": 50,
     "std": "689"
+   },
+   "02WP": {
+    "finishes": {
+     "626": null,
+     "628": null,
+     "630": 354,
+     "689": null,
+     "695": null,
+     "693": null,
+     "711": null
+    },
+    "cyl": null,
+    "fn": "Dummy pull (wire)",
+    "page": 50,
+    "std": "630"
+   },
+   "01PN": {
+    "finishes": {
+     "628": 142,
+     "630": null,
+     "689": null,
+     "695": null,
+     "693": null,
+     "711": 142,
+     "626": null
+    },
+    "cyl": null,
+    "fn": "Cover plate",
+    "page": 51,
+    "std": "628"
+   },
+   "03PN": {
+    "finishes": {
+     "628": 142,
+     "630": null,
+     "689": null,
+     "695": null,
+     "693": null,
+     "711": 142,
+     "626": null
+    },
+    "cyl": "rim",
+    "fn": "Key retracts latch",
+    "page": 51,
+    "std": "628"
+   },
+   "03CN": {
+    "finishes": {
+     "628": null,
+     "630": 500,
+     "689": null,
+     "695": 713,
+     "693": 713,
+     "711": null,
+     "626": null
+    },
+    "cyl": "rim",
+    "fn": "Key retracts latch",
+    "page": 51,
+    "std": "630"
+   },
+   "02AN": {
+    "finishes": {
+     "628": null,
+     "630": null,
+     "689": 155,
+     "695": 155,
+     "693": 155,
+     "711": null,
+     "626": null
+    },
+    "cyl": null,
+    "fn": "Dummy pull",
+    "page": 51,
+    "std": "689"
+   },
+   "03AN": {
+    "finishes": {
+     "628": null,
+     "630": null,
+     "689": 155,
+     "695": 155,
+     "693": 155,
+     "711": null,
+     "626": null
+    },
+    "cyl": "rim",
+    "fn": "Key retracts latch",
+    "page": 51,
+    "std": "689"
    }
   },
   "levers": {
@@ -1600,6 +1690,96 @@ const SERIES_RULES = {
     "fn": "Key retracts latch",
     "page": 50,
     "std": "689"
+   },
+   "02WP": {
+    "finishes": {
+     "626": null,
+     "628": null,
+     "630": 354,
+     "689": null,
+     "695": null,
+     "693": null,
+     "711": null
+    },
+    "cyl": null,
+    "fn": "Dummy pull (wire)",
+    "page": 50,
+    "std": "630"
+   },
+   "01PN": {
+    "finishes": {
+     "628": 142,
+     "630": null,
+     "689": null,
+     "695": null,
+     "693": null,
+     "711": 142,
+     "626": null
+    },
+    "cyl": null,
+    "fn": "Cover plate",
+    "page": 51,
+    "std": "628"
+   },
+   "03PN": {
+    "finishes": {
+     "628": 142,
+     "630": null,
+     "689": null,
+     "695": null,
+     "693": null,
+     "711": 142,
+     "626": null
+    },
+    "cyl": "rim",
+    "fn": "Key retracts latch",
+    "page": 51,
+    "std": "628"
+   },
+   "03CN": {
+    "finishes": {
+     "628": null,
+     "630": 500,
+     "689": null,
+     "695": 713,
+     "693": 713,
+     "711": null,
+     "626": null
+    },
+    "cyl": "rim",
+    "fn": "Key retracts latch",
+    "page": 51,
+    "std": "630"
+   },
+   "02AN": {
+    "finishes": {
+     "628": null,
+     "630": null,
+     "689": 155,
+     "695": 155,
+     "693": 155,
+     "711": null,
+     "626": null
+    },
+    "cyl": null,
+    "fn": "Dummy pull",
+    "page": 51,
+    "std": "689"
+   },
+   "03AN": {
+    "finishes": {
+     "628": null,
+     "630": null,
+     "689": 155,
+     "695": 155,
+     "693": 155,
+     "711": null,
+     "626": null
+    },
+    "cyl": "rim",
+    "fn": "Key retracts latch",
+    "page": 51,
+    "std": "689"
    }
   },
   "levers": {
@@ -1846,6 +2026,96 @@ const SERIES_RULES = {
     "cyl": "rim",
     "fn": "Key retracts latch",
     "page": 50,
+    "std": "689"
+   },
+   "02WP": {
+    "finishes": {
+     "626": null,
+     "628": null,
+     "630": 354,
+     "689": null,
+     "695": null,
+     "693": null,
+     "711": null
+    },
+    "cyl": null,
+    "fn": "Dummy pull (wire)",
+    "page": 50,
+    "std": "630"
+   },
+   "01PN": {
+    "finishes": {
+     "628": 142,
+     "630": null,
+     "689": null,
+     "695": null,
+     "693": null,
+     "711": 142,
+     "626": null
+    },
+    "cyl": null,
+    "fn": "Cover plate",
+    "page": 51,
+    "std": "628"
+   },
+   "03PN": {
+    "finishes": {
+     "628": 142,
+     "630": null,
+     "689": null,
+     "695": null,
+     "693": null,
+     "711": 142,
+     "626": null
+    },
+    "cyl": "rim",
+    "fn": "Key retracts latch",
+    "page": 51,
+    "std": "628"
+   },
+   "03CN": {
+    "finishes": {
+     "628": null,
+     "630": 500,
+     "689": null,
+     "695": 713,
+     "693": 713,
+     "711": null,
+     "626": null
+    },
+    "cyl": "rim",
+    "fn": "Key retracts latch",
+    "page": 51,
+    "std": "630"
+   },
+   "02AN": {
+    "finishes": {
+     "628": null,
+     "630": null,
+     "689": 155,
+     "695": 155,
+     "693": 155,
+     "711": null,
+     "626": null
+    },
+    "cyl": null,
+    "fn": "Dummy pull",
+    "page": 51,
+    "std": "689"
+   },
+   "03AN": {
+    "finishes": {
+     "628": null,
+     "630": null,
+     "689": 155,
+     "695": 155,
+     "693": 155,
+     "711": null,
+     "626": null
+    },
+    "cyl": "rim",
+    "fn": "Key retracts latch",
+    "page": 51,
     "std": "689"
    }
   },
