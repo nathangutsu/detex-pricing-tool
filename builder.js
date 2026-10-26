@@ -144,17 +144,57 @@ function isKnownWholeToken(piece, seriesKey, rules, trimKeysUpper, catGroup) {
   return false;
 }
 
+// Bid requests also run the trim and the alarm/option codes together with no delimiter (V4003ANEB =
+// V40 + 03AN + EB). Split such a piece into known codes only when the split is unambiguous: the
+// segmentation with the fewest tokens must be unique, otherwise leave the piece alone so it gets flagged.
+function segmentRunTogether(piece, seriesKey, rules, trimKeysUpper, catGroup) {
+  const cands = new Set();
+  Object.keys(trimKeysUpper).forEach(k => cands.add(k));
+  Object.keys(rules.options).forEach(k => cands.add(k.toUpperCase()));
+  const elig = ELECTRIFIED_ELIGIBILITY[catGroup] || {};
+  Object.keys(elig).forEach(k => { if (!/[\s-]/.test(k) && elig[k].series.includes(seriesKey)) cands.add(k.toUpperCase()); });
+  Object.keys(ELEC_OPTION_INDEX[catGroup] || {}).forEach(k => { if (!/[\s-]/.test(k)) cands.add(k); });
+  ALL_FINISHES.forEach(f => cands.add(String(f)));
+  ['36', '48', '60', '96', '120', 'S', 'T', 'U', 'LS', 'KN'].forEach(k => cands.add(k));
+  HANDING_CODES.forEach(k => cands.add(k));
+  DOGGING_CODES.forEach(k => cands.add(k));
+  Object.keys(CYLINDER_CODES).forEach(k => cands.add(k.toUpperCase()));
+  const up = piece.toUpperCase();
+  const memo = new Map();
+  // best(i) -> { n: fewest tokens for up.slice(i), count: how many segmentations reach that n, seg: one of them }
+  function best(i) {
+    if (i === up.length) return { n: 0, count: 1, seg: [] };
+    if (memo.has(i)) return memo.get(i);
+    let res = null;
+    for (let j = i + 1; j <= up.length; j++) {
+      const tok = up.slice(i, j);
+      if (!cands.has(tok)) continue;
+      const sub = best(j);
+      if (!sub) continue;
+      const n = sub.n + 1;
+      if (!res || n < res.n) res = { n, count: sub.count, seg: [tok].concat(sub.seg) };
+      else if (n === res.n) res.count += sub.count;
+    }
+    memo.set(i, res);
+    return res;
+  }
+  const r = best(0);
+  return r && r.count === 1 && r.seg.length > 1 ? r.seg : null;
+}
+
 function smartSplitRest(afterSeriesStr, seriesKey, rules, trimKeysUpper, catGroup) {
   const dashPieces = afterSeriesStr.split(/-+/).map(s => s.trim()).filter(Boolean);
   const out = [];
+  const known = p => isKnownWholeToken(p, seriesKey, rules, trimKeysUpper, catGroup);
   dashPieces.forEach(piece => {
-    if (isKnownWholeToken(piece, seriesKey, rules, trimKeysUpper, catGroup) || !/x/i.test(piece)) {
-      out.push(piece);
-      return;
-    }
+    if (known(piece)) { out.push(piece); return; }
+    const seg = segmentRunTogether(piece, seriesKey, rules, trimKeysUpper, catGroup);
+    if (seg) { out.push(...seg); return; }
+    if (!/x/i.test(piece)) { out.push(piece); return; }
     const subParts = piece.split(/x+/i).map(s => s.trim()).filter(Boolean);
-    if (subParts.length > 1 && subParts.every(sp => isKnownWholeToken(sp, seriesKey, rules, trimKeysUpper, catGroup))) {
-      out.push(...subParts);
+    const expanded = subParts.map(sp => known(sp) ? [sp] : segmentRunTogether(sp, seriesKey, rules, trimKeysUpper, catGroup));
+    if (subParts.length > 1 && expanded.every(Boolean)) {
+      expanded.forEach(e => out.push(...e));
     } else {
       out.push(piece);
     }
@@ -197,7 +237,7 @@ function buildAssembledSku(raw) {
   // Typed case never matters; everything echoed back is capitals. People naturally write door widths
   // with an inch mark (48", 48”, 48″) even though the SKU token is just the number — strip those so
   // "48"" tokenizes the same as "48" instead of failing to match any width/option/trim code.
-  let input = (raw || '').trim().toUpperCase().replace(/["'’”″]/g, '');
+  let input = (raw || '').trim().toUpperCase().replace(/["'’”″]/g, '').replace(/\s+/g, '-');
   const typedInput = input;
   if (!input) return { error: 'Enter a SKU string, e.g. V40x08BNx36xLDxWxIC7' };
 
