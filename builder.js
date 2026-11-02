@@ -242,6 +242,11 @@ function buildAssembledSku(raw) {
   const typedInput = input;
   if (!input) return { error: 'Enter a SKU string, e.g. V40x08BNx36xLDxWxIC7' };
 
+  // Value Series narrow-stile variants (V40xNS, V50xNS, V51xNS, PDF pp.46-48): same options and trims as the
+  // standard device, but their own base price. "NS" is stripped here and the base price/label swapped below.
+  let narrowStile = false;
+  input = input.replace(/^(FH|F|H)?(V(?:40|50|51))[-X]?NS/, (all, pre, ser) => { narrowStile = true; return (pre || '') + ser; });
+
   if (/^ECL-/.test(input)) {
     const ecl = buildEclSku(input);
     if (ecl) return ecl;
@@ -470,23 +475,25 @@ function buildAssembledSku(raw) {
   }
 
   const deviceLines = [];
-  const baseTable = DEVICE_BASE[seriesKey];
+  const baseKey = narrowStile ? seriesKey + 'xNS' : seriesKey;
+  const baseTable = DEVICE_BASE[baseKey];
+  const devLabel = narrowStile ? rules.label.replace(seriesKey, seriesKey + 'xNS') : rules.label;
   const basePrice = baseTable ? baseTable.prices[finish] : undefined;
   const adder = widthAdder(seriesKey, width, finish);
   if (basePrice === undefined) {
-    unresolved.push(`No ${finish} finish price for ${rules.label} on p.${rules.devicePage} — check the finish against the device page. Device not priced.`);
+    unresolved.push(`No ${finish} finish price for ${devLabel} on p.${rules.devicePage} — check the finish against the device page. Device not priced.`);
   } else if (!adder) {
-    if (widthListed) unresolved.push(`${width}" width isn't offered for ${rules.label} in ${finish} finish (p.${baseTable.page}). Device not priced.`);
+    if (widthListed) unresolved.push(`${width}" width isn't offered for ${devLabel} in ${finish} finish (p.${baseTable.page}). Device not priced.`);
   } else {
     const finishNote = finishAssumed ? ' (default, not specified)' : '';
     if (adder.add === 0) {
       deviceLines.push({
-        label: `${rules.label} device, ${finish}${finishNote}, ${width}"${widthAssumed ? ' (standard, not specified)' : ''}`,
+        label: `${devLabel} device, ${finish}${finishNote}, ${width}"${widthAssumed ? ' (standard, not specified)' : ''}`,
         price: basePrice,
         page: baseTable.page,
       });
     } else {
-      deviceLines.push({ label: `${rules.label} device, ${finish}${finishNote}, 36" base`, price: basePrice, page: baseTable.page });
+      deviceLines.push({ label: `${devLabel} device, ${finish}${finishNote}, 36" base`, price: basePrice, page: baseTable.page });
       deviceLines.push({ label: `${width}" door width adder`, price: adder.add, page: baseTable.page });
     }
   }
@@ -549,7 +556,7 @@ function buildAssembledSku(raw) {
   const total = allLines.reduce((s, l) => s + (l.price || 0), 0);
 
   return {
-    partNumber: typedInput, seriesKey, seriesLabel: rules.label, lines: allLines, unresolved, total,
+    partNumber: typedInput, seriesKey, seriesLabel: devLabel, lines: allLines, unresolved, total,
     finish, width, trimCode,
   };
 }
