@@ -282,6 +282,12 @@ function buildAssembledSku(raw) {
 
   const afterSeries = input.slice(seriesToken.length).replace(/^[-x]+/i, '');
   const rest = mergeCompoundTokens(smartSplitRest(afterSeries, seriesKey, rules, trimKeysUpper, catGroup));
+  // The Advantex catalog only sells the battery alarm as the weatherized "EB W" (PDF p.35: no plain EB), so a
+  // bare "EB" on an Advantex device can only mean EB W (the weatherized conduit kits FC3EC1W etc. hang off it).
+  let ebAliased = false;
+  if (catGroup === 'ADVANTEX') {
+    rest.forEach((t, i) => { if (t.toUpperCase() === 'EB') { rest[i] = 'EB W'; ebAliased = true; } });
+  }
 
   let trimCode = null;
   rest.forEach(tok => {
@@ -406,6 +412,9 @@ function buildAssembledSku(raw) {
         }
       }
       const fnLine = { label, price, page, note, info: elig.info };
+      if (ebAliased && upper === 'EB W') {
+        fnLine.info = [fnLine.info, 'Advantex offers the battery-powered alarm only as the weatherized EB W (PDF p.35), so "EB" was priced as EB W.'].filter(Boolean).join(' ');
+      }
       lines.push(fnLine);
       if (ELEC_NON_WEATHERIZED[catGroup].has(upper)) nonWFnLines.push({ line: fnLine, code: upper });
       if (elig.requiresDeviceW && !deviceWAdded && rules.options['W']) {
